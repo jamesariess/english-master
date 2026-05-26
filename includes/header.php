@@ -316,6 +316,9 @@ window.addEventListener('load', function() {
       <a href="<?= APP_URL ?>/challenges.php" class="nav-item <?= $currentPage==='challenges'?'active':'' ?>">
         <span class="nav-icon">⚡</span><span class="nav-label">Daily Challenges</span>
       </a>
+      <a href="<?= APP_URL ?>/practice.php" class="nav-item <?= $currentPage==='practice'?'active':'' ?>">
+        <span class="nav-icon">âœ“</span><span class="nav-label">Practice Lab</span>
+      </a>
       <a href="<?= APP_URL ?>/speaking.php" class="nav-item <?= $currentPage==='speaking'?'active':'' ?>">
         <span class="nav-icon">🎤</span><span class="nav-label">Speaking Practice</span>
       </a>
@@ -325,6 +328,11 @@ window.addEventListener('load', function() {
       <a href="<?= APP_URL ?>/progress.php" class="nav-item <?= $currentPage==='progress'?'active':'' ?>">
         <span class="nav-icon">📊</span><span class="nav-label">My Progress</span>
       </a>
+      <?php if (isAdmin($user)): ?>
+      <a href="<?= APP_URL ?>/admin.php" class="nav-item <?= $currentPage==='admin'?'active':'' ?>">
+        <span class="nav-icon">âš™</span><span class="nav-label">Admin Panel</span>
+      </a>
+      <?php endif; ?>
     </nav>
     <?php endif; ?>
 

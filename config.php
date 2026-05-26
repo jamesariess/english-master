@@ -50,6 +50,20 @@ function auth() {
     }
 }
 
+// --- Admin Guard ---
+function isAdmin($user = null) {
+    if ($user === null) $user = currentUser();
+    return $user && (($user['role'] ?? 'user') === 'admin');
+}
+
+function requireAdmin() {
+    $user = currentUser();
+    if (!isAdmin($user)) {
+        header('Location: ' . APP_URL . '/dashboard.php');
+        exit;
+    }
+}
+
 // --- Get Current User ---
 function currentUser() {
     if (empty($_SESSION['uid'])) return null;
@@ -62,6 +76,28 @@ function currentUser() {
 // --- Sanitize Input ---
 function clean($str) {
     return htmlspecialchars(strip_tags(trim($str)), ENT_QUOTES, 'UTF-8');
+}
+
+function jsonFromAI($text) {
+    $cleaned = trim(preg_replace('/```json|```/i', '', $text));
+    $data = json_decode($cleaned, true);
+    if ($data !== null) return $data;
+
+    $start = strpos($cleaned, '{');
+    $end = strrpos($cleaned, '}');
+    if ($start !== false && $end !== false && $end > $start) {
+        $data = json_decode(substr($cleaned, $start, $end - $start + 1), true);
+        if ($data !== null) return $data;
+    }
+
+    $start = strpos($cleaned, '[');
+    $end = strrpos($cleaned, ']');
+    if ($start !== false && $end !== false && $end > $start) {
+        $data = json_decode(substr($cleaned, $start, $end - $start + 1), true);
+        if ($data !== null) return $data;
+    }
+
+    return null;
 }
 
 // --- Escape for DB ---
@@ -159,6 +195,10 @@ function callAI($messages, $system = '', $maxTokens = 1500) {
 function ensureNewTables() {
     if (!empty($_SESSION['tables_checked'])) return;
     $db = db();
+    $col = $db->query("SHOW COLUMNS FROM users LIKE 'role'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE users ADD role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER english_level");
+    }
     $db->query("CREATE TABLE IF NOT EXISTS speaking_sessions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
@@ -178,6 +218,36 @@ function ensureNewTables() {
         category VARCHAR(50) DEFAULT 'general',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $db->query("CREATE TABLE IF NOT EXISTS practice_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt') NOT NULL DEFAULT 'better_english',
+        title VARCHAR(200) NOT NULL,
+        prompt TEXT NOT NULL,
+        option_a TEXT,
+        option_b TEXT,
+        option_c TEXT,
+        correct_option CHAR(1),
+        explanation TEXT,
+        difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
+        category VARCHAR(80) DEFAULT 'general',
+        xp_reward INT DEFAULT 25,
+        active TINYINT(1) DEFAULT 1,
+        created_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+    )");
+    $db->query("CREATE TABLE IF NOT EXISTS user_practice_attempts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        practice_item_id INT NOT NULL,
+        answer TEXT,
+        is_correct TINYINT(1) DEFAULT 0,
+        ai_feedback TEXT,
+        xp_earned INT DEFAULT 0,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (practice_item_id) REFERENCES practice_items(id) ON DELETE CASCADE
+    )");
     // Seed prompts if empty
     $r = $db->query("SELECT COUNT(*) AS c FROM speaking_prompts");
     if ($r && (int)$r->fetch_assoc()['c'] === 0) {
@@ -193,6 +263,22 @@ function ensureNewTables() {
             ('Every day I try to learn five new English words. I write them in my notebook and practice using them in sentences.','Study Habits','beginner','general'),
             ('Please hold the line while I transfer your call to the correct department. Thank you for your patience.','Call Center','intermediate','work')
         ");
+    }
+    $r = $db->query("SELECT COUNT(*) AS c FROM practice_items");
+    if ($r && (int)$r->fetch_assoc()['c'] === 0) {
+        $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct_option,explanation,difficulty,category,xp_reward) VALUES
+            ('better_english','Choose the Better English','Which sentence sounds more natural and correct?','I am interested in learning English.','I am interesting to learn English.',NULL,'A','Use interested when you feel curiosity. Interesting describes the thing that causes curiosity.','beginner','grammar',25),
+            ('grammar_choice','Past Tense Practice','Choose the correct sentence.','Yesterday I go to work.','Yesterday I went to work.','Yesterday I will go to work.','B','Use went for a completed action in the past.','beginner','tenses',25),
+            ('vocabulary_quiz','Vocabulary in Context','Choose the best word: She gave a clear and ___ explanation.','confusing','concise','late','B','Concise means clear and expressed in few words.','intermediate','vocabulary',30),
+            ('writing_prompt','Write a Strong Sentence','Write one professional sentence using the word \"proactive\".',NULL,NULL,NULL,NULL,'A strong answer uses proactive to mean taking action before problems happen.','intermediate','writing',35),
+            ('speaking_prompt','Read Aloud: Clear Introduction','Read this aloud: Hello, my name is Anna. I am practicing English every day so I can speak more clearly at work.',NULL,NULL,NULL,NULL,'Focus on clear pacing and word endings.','beginner','speaking',25)
+        ");
+    }
+    $adminEmail = esc('admin@englishmaster.local');
+    $admin = $db->query("SELECT id FROM users WHERE email='$adminEmail' LIMIT 1");
+    if (!$admin || $admin->num_rows === 0) {
+        $pass = esc(password_hash('admin123', PASSWORD_BCRYPT));
+        $db->query("INSERT INTO users (name,email,password,english_level,role,avatar,last_active) VALUES ('Admin','admin@englishmaster.local','$pass','advanced','admin','A',CURDATE())");
     }
     $_SESSION['tables_checked'] = true;
 }

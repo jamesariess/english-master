@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_active DATE,
     avatar VARCHAR(10) DEFAULT '🧑',
     english_level ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
+    role ENUM('user','admin') NOT NULL DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -110,6 +111,39 @@ CREATE TABLE IF NOT EXISTS user_challenges (
     FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
 );
 
+-- Practice lab items
+CREATE TABLE IF NOT EXISTS practice_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt') NOT NULL DEFAULT 'better_english',
+    title VARCHAR(200) NOT NULL,
+    prompt TEXT NOT NULL,
+    option_a TEXT,
+    option_b TEXT,
+    option_c TEXT,
+    correct_option CHAR(1),
+    explanation TEXT,
+    difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
+    category VARCHAR(80) DEFAULT 'general',
+    xp_reward INT DEFAULT 25,
+    active TINYINT(1) DEFAULT 1,
+    created_by INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_practice_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    practice_item_id INT NOT NULL,
+    answer TEXT,
+    is_correct TINYINT(1) DEFAULT 0,
+    ai_feedback TEXT,
+    xp_earned INT DEFAULT 0,
+    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (practice_item_id) REFERENCES practice_items(id) ON DELETE CASCADE
+);
+
 -- Interview sessions
 CREATE TABLE IF NOT EXISTS interview_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -148,6 +182,13 @@ CREATE TABLE IF NOT EXISTS user_achievements (
 -- SAMPLE DATA
 -- ============================================
 
+-- Default admin account for local setup
+-- Email: admin@englishmaster.local
+-- Password: admin123
+INSERT INTO users (name,email,password,english_level,role,avatar,last_active)
+SELECT 'Admin','admin@englishmaster.local','$2y$10$8g7z0l1AjQAsXTQpvCV2FuYXQzHkVmRSPhy7ZWdrBIk21PlI7ovZG','advanced','admin','A',CURDATE()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='admin@englishmaster.local');
+
 -- Sample vocabulary words
 INSERT INTO vocabulary (word, meaning, synonyms, antonyms, pronunciation, example_sentence, difficulty, category) VALUES
 ('eloquent','Fluent and persuasive in speaking or writing','articulate, expressive, well-spoken','inarticulate, tongue-tied','EL-oh-kwent','She gave an eloquent speech that moved the entire audience.','intermediate','communication'),
@@ -172,6 +213,14 @@ INSERT INTO challenges (type, title, description, content, difficulty, xp_reward
 ('vocabulary','Word of the Day','Learn and use the word PERSEVERANCE in a sentence.','Write a sentence using the word "perseverance" correctly. Then explain what it means in your own words.','intermediate',75,CURDATE()),
 ('writing','Describe Your Day','Write 5-6 sentences about what you did today.','Describe your day so far in at least 5 sentences. Focus on using past tense correctly.','beginner',60,CURDATE()),
 ('grammar','Tense Challenge','Rewrite these sentences in the correct tense.','1. Yesterday I am eating lunch at 12pm.\n2. She will went to the store tomorrow.\n3. They has been working for 3 hours.','intermediate',80,CURDATE());
+
+-- Practice lab samples
+INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct_option,explanation,difficulty,category,xp_reward) VALUES
+('better_english','Choose the Better English','Which sentence sounds more natural and correct?','I am interested in learning English.','I am interesting to learn English.',NULL,'A','Use interested when you feel curiosity. Interesting describes the thing that causes curiosity.','beginner','grammar',25),
+('grammar_choice','Past Tense Practice','Choose the correct sentence.','Yesterday I go to work.','Yesterday I went to work.','Yesterday I will go to work.','B','Use went for a completed action in the past.','beginner','tenses',25),
+('vocabulary_quiz','Vocabulary in Context','Choose the best word: She gave a clear and ___ explanation.','confusing','concise','late','B','Concise means clear and expressed in few words.','intermediate','vocabulary',30),
+('writing_prompt','Write a Strong Sentence','Write one professional sentence using the word "proactive".',NULL,NULL,NULL,NULL,'A strong answer uses proactive to mean taking action before problems happen.','intermediate','writing',35),
+('speaking_prompt','Read Aloud: Clear Introduction','Read this aloud: Hello, my name is Anna. I am practicing English every day so I can speak more clearly at work.',NULL,NULL,NULL,NULL,'Focus on clear pacing and word endings.','beginner','speaking',25);
 
 -- Sample achievements
 INSERT INTO achievements (name, description, icon, xp_reward, condition_type, condition_value) VALUES
