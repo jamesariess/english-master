@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS vocabulary (
     example_sentence TEXT,
     difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
     category VARCHAR(50) DEFAULT 'general',
+    tags VARCHAR(255) DEFAULT '',
+    active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -92,6 +94,8 @@ CREATE TABLE IF NOT EXISTS challenges (
     description TEXT,
     content TEXT,
     difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
+    tags VARCHAR(255) DEFAULT '',
+    active TINYINT(1) DEFAULT 1,
     xp_reward INT DEFAULT 50,
     challenge_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -114,7 +118,7 @@ CREATE TABLE IF NOT EXISTS user_challenges (
 -- Practice lab items
 CREATE TABLE IF NOT EXISTS practice_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt') NOT NULL DEFAULT 'better_english',
+    type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt','sentence_rearrangement','fill_blank','reading_comprehension','daily_challenge_set','scenario_roleplay','analytical_english','word_sentence_builder') NOT NULL DEFAULT 'better_english',
     title VARCHAR(200) NOT NULL,
     prompt TEXT NOT NULL,
     option_a TEXT,
@@ -124,6 +128,8 @@ CREATE TABLE IF NOT EXISTS practice_items (
     explanation TEXT,
     difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
     category VARCHAR(80) DEFAULT 'general',
+    tags VARCHAR(255) DEFAULT '',
+    audio_url VARCHAR(255) DEFAULT '',
     xp_reward INT DEFAULT 25,
     active TINYINT(1) DEFAULT 1,
     created_by INT NULL,
@@ -257,6 +263,9 @@ CREATE TABLE IF NOT EXISTS speaking_prompts (
     topic VARCHAR(100) DEFAULT 'General',
     difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
     category VARCHAR(50) DEFAULT 'general',
+    tags VARCHAR(255) DEFAULT '',
+    audio_url VARCHAR(255) DEFAULT '',
+    active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

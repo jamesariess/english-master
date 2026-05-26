@@ -48,7 +48,7 @@ Respond ONLY in valid JSON:
 }
 
 // Get today's challenges
-$todayChallenges = $db->query("SELECT c.*, uc.score as user_score, uc.xp_earned, uc.completed_at FROM challenges c LEFT JOIN user_challenges uc ON c.id=uc.challenge_id AND uc.user_id=$uid WHERE c.challenge_date=CURDATE() ORDER BY c.id");
+$todayChallenges = $db->query("SELECT c.*, uc.score as user_score, uc.xp_earned, uc.completed_at FROM challenges c LEFT JOIN user_challenges uc ON c.id=uc.challenge_id AND uc.user_id=$uid WHERE c.challenge_date=CURDATE() AND c.active=1 ORDER BY c.id");
 
 // Get result from session
 $chResult = $_SESSION['ch_result'] ?? null;

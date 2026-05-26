@@ -21,7 +21,7 @@ function validDifficulty($value) {
 }
 
 function validPracticeType($value) {
-    $types = ['better_english', 'grammar_choice', 'vocabulary_quiz', 'writing_prompt', 'speaking_prompt'];
+    $types = practiceTypes();
     return in_array($value, $types, true) ? $value : 'better_english';
 }
 
@@ -44,10 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = esc($_POST['description'] ?? '');
         $content = esc($_POST['content'] ?? '');
         $difficulty = esc(validDifficulty($_POST['difficulty'] ?? 'beginner'));
+        $tags = esc($_POST['tags'] ?? '');
+        $active = isset($_POST['active']) ? 1 : 0;
         $xp = max(10, min(300, (int)($_POST['xp_reward'] ?? 50)));
         $date = esc($_POST['challenge_date'] ?: date('Y-m-d'));
         if ($title && $content) {
-            $db->query("INSERT INTO challenges (type,title,description,content,difficulty,xp_reward,challenge_date) VALUES ('$type','$title','$description','$content','$difficulty',$xp,'$date')");
+            $db->query("INSERT INTO challenges (type,title,description,content,difficulty,tags,active,xp_reward,challenge_date) VALUES ('$type','$title','$description','$content','$difficulty','$tags',$active,$xp,'$date')");
             adminRedirect('Challenge added.');
         }
         adminRedirect('Challenge title and content are required.', 'warn');
@@ -62,8 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $example = esc($_POST['example_sentence'] ?? '');
         $difficulty = esc(validDifficulty($_POST['difficulty'] ?? 'beginner'));
         $category = esc($_POST['category'] ?? 'general');
+        $tags = esc($_POST['tags'] ?? '');
+        $active = isset($_POST['active']) ? 1 : 0;
         if ($word && $meaning) {
-            $db->query("INSERT INTO vocabulary (word,meaning,synonyms,antonyms,pronunciation,example_sentence,difficulty,category) VALUES ('$word','$meaning','$synonyms','$antonyms','$pronunciation','$example','$difficulty','$category')");
+            $db->query("INSERT INTO vocabulary (word,meaning,synonyms,antonyms,pronunciation,example_sentence,difficulty,category,tags,active) VALUES ('$word','$meaning','$synonyms','$antonyms','$pronunciation','$example','$difficulty','$category','$tags',$active)");
             adminRedirect('Vocabulary word added.');
         }
         adminRedirect('Word and meaning are required.', 'warn');
@@ -74,8 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $topic = esc($_POST['topic'] ?? 'General');
         $difficulty = esc(validDifficulty($_POST['difficulty'] ?? 'beginner'));
         $category = esc($_POST['category'] ?? 'general');
+        $tags = esc($_POST['tags'] ?? '');
+        $audioUrl = esc($_POST['audio_url'] ?? '');
+        $active = isset($_POST['active']) ? 1 : 0;
         if ($text) {
-            $db->query("INSERT INTO speaking_prompts (text,topic,difficulty,category) VALUES ('$text','$topic','$difficulty','$category')");
+            $db->query("INSERT INTO speaking_prompts (text,topic,difficulty,category,tags,audio_url,active) VALUES ('$text','$topic','$difficulty','$category','$tags','$audioUrl',$active)");
             adminRedirect('Read-aloud prompt added.');
         }
         adminRedirect('Prompt text is required.', 'warn');
@@ -93,11 +100,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $explanation = esc($_POST['explanation'] ?? '');
         $difficulty = esc(validDifficulty($_POST['difficulty'] ?? 'beginner'));
         $category = esc($_POST['category'] ?? 'general');
+        $tags = esc($_POST['tags'] ?? '');
+        $audioUrl = esc($_POST['audio_url'] ?? '');
+        $active = isset($_POST['active']) ? 1 : 0;
         $xp = max(5, min(200, (int)($_POST['xp_reward'] ?? 25)));
 
         if ($title && $prompt) {
             $correctSql = $correct ? "'" . esc($correct) . "'" : "NULL";
-            $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct_option,explanation,difficulty,category,xp_reward,created_by) VALUES ('$type','$title','$prompt','$optionA','$optionB','$optionC',$correctSql,'$explanation','$difficulty','$category',$xp,$uid)");
+            $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct_option,explanation,difficulty,category,tags,audio_url,xp_reward,active,created_by) VALUES ('$type','$title','$prompt','$optionA','$optionB','$optionC',$correctSql,'$explanation','$difficulty','$category','$tags','$audioUrl',$xp,$active,$uid)");
             adminRedirect('Practice item added.');
         }
         adminRedirect('Practice title and prompt are required.', 'warn');
@@ -117,8 +127,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prompt .= " JSON format: {\"items\":[{\"type\":\"grammar|vocabulary|writing|speaking|listening\",\"title\":\"\",\"description\":\"\",\"content\":\"\",\"xp_reward\":50}]}";
         } elseif ($target === 'speaking') {
             $prompt .= " JSON format: {\"items\":[{\"text\":\"read aloud text\",\"topic\":\"\",\"category\":\"\"}]}";
+        } elseif ($target === 'strict_module') {
+            $module = $_POST['module'] ?? 'vocabulary_lesson';
+            $prompt = learningModulePrompt($module, ucfirst($difficulty), $topic);
+            $prompt .= "\n\nReturn this as one saved item in JSON too: {\"items\":[{\"type\":\"" . esc(validPracticeType($module === 'vocabulary_lesson' ? 'word_sentence_builder' : $module)) . "\",\"title\":\"\",\"prompt\":\"full formatted exercise text\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"correct_option\":\"\",\"explanation\":\"teaching notes\",\"category\":\"$topic\",\"tags\":\"$topic\",\"xp_reward\":25}]}";
         } else {
-            $prompt .= " JSON format: {\"items\":[{\"type\":\"better_english|grammar_choice|vocabulary_quiz|writing_prompt|speaking_prompt\",\"title\":\"\",\"prompt\":\"\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"correct_option\":\"A|B|C or empty\",\"explanation\":\"\",\"category\":\"\",\"xp_reward\":25}]}";
+            $prompt .= " JSON format: {\"items\":[{\"type\":\"better_english|grammar_choice|vocabulary_quiz|writing_prompt|speaking_prompt|sentence_rearrangement|fill_blank|reading_comprehension|daily_challenge_set|scenario_roleplay|analytical_english|word_sentence_builder\",\"title\":\"\",\"prompt\":\"\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"correct_option\":\"A|B|C or empty\",\"explanation\":\"\",\"category\":\"\",\"tags\":\"comma skill tags\",\"xp_reward\":25}]}";
         }
 
         $ai = callAI([['role' => 'user', 'content' => $prompt]], $system, 2000);
@@ -132,14 +146,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $syn = esc($item['synonyms'] ?? ''); $ant = esc($item['antonyms'] ?? '');
                 $pro = esc($item['pronunciation'] ?? ''); $ex = esc($item['example_sentence'] ?? '');
                 $cat = esc($item['category'] ?? $topic); $diff = esc($difficulty);
-                $db->query("INSERT INTO vocabulary (word,meaning,synonyms,antonyms,pronunciation,example_sentence,difficulty,category) VALUES ('$word','$meaning','$syn','$ant','$pro','$ex','$diff','$cat')");
+                $db->query("INSERT INTO vocabulary (word,meaning,synonyms,antonyms,pronunciation,example_sentence,difficulty,category,tags,active) VALUES ('$word','$meaning','$syn','$ant','$pro','$ex','$diff','$cat','$cat',1)");
                 $created++;
             } elseif ($target === 'challenge' && !empty($item['title']) && !empty($item['content'])) {
                 $type = in_array($item['type'] ?? '', ['vocabulary','grammar','writing','speaking','listening'], true) ? $item['type'] : 'grammar';
                 $title = esc($item['title']); $desc = esc($item['description'] ?? '');
                 $content = esc($item['content']); $diff = esc($difficulty);
                 $xp = max(10, min(300, (int)($item['xp_reward'] ?? 50)));
-                $db->query("INSERT INTO challenges (type,title,description,content,difficulty,xp_reward,challenge_date) VALUES ('$type','$title','$desc','$content','$diff',$xp,CURDATE())");
+                $db->query("INSERT INTO challenges (type,title,description,content,difficulty,tags,active,xp_reward,challenge_date) VALUES ('$type','$title','$desc','$content','$diff','$topic',1,$xp,CURDATE())");
                 $created++;
             } elseif ($target === 'speaking' && !empty($item['text'])) {
                 $text = esc($item['text']); $topicEsc = esc($item['topic'] ?? $topic);
@@ -153,9 +167,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $correct = strtoupper(substr(trim($item['correct_option'] ?? ''), 0, 1));
                 $correctSql = in_array($correct, ['A','B','C'], true) ? "'" . esc($correct) . "'" : "NULL";
                 $explanation = esc($item['explanation'] ?? '');
-                $cat = esc($item['category'] ?? $topic); $diff = esc($difficulty);
+                $cat = esc($item['category'] ?? $topic); $tags = esc($item['tags'] ?? $topic); $diff = esc($difficulty);
                 $xp = max(5, min(200, (int)($item['xp_reward'] ?? 25)));
-                $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct_option,explanation,difficulty,category,xp_reward,created_by) VALUES ('$type','$title','$promptEsc','$a','$b','$c',$correctSql,'$explanation','$diff','$cat',$xp,$uid)");
+                $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct_option,explanation,difficulty,category,tags,xp_reward,active,created_by) VALUES ('$type','$title','$promptEsc','$a','$b','$c',$correctSql,'$explanation','$diff','$cat','$tags',$xp,1,$uid)");
                 $created++;
             }
         }
@@ -175,6 +189,15 @@ $recentPractice = $db->query("SELECT title,type,difficulty,created_at FROM pract
 
 include 'includes/header.php';
 ?>
+
+<style>
+.admin-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.admin-tab { border:1px solid var(--border); background:var(--bg-card); color:var(--text-2); border-radius:10px; padding:10px 14px; cursor:pointer; font-weight:700; }
+.admin-tab.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+.admin-panel { display:none; }
+.admin-panel.active { display:block; }
+.btn-ai { background:linear-gradient(135deg,var(--blue),var(--teal)); box-shadow:0 10px 28px #2dd4bf30; }
+</style>
 
 <div class="page-header">
   <h1>Admin Panel</h1>
@@ -202,9 +225,23 @@ include 'includes/header.php';
       <label class="form-label">Create</label>
       <select name="target" class="form-control">
         <option value="practice">Practice Lab items</option>
+        <option value="strict_module">Strict format module</option>
         <option value="vocabulary">Vocabulary words</option>
         <option value="challenge">Daily challenges</option>
         <option value="speaking">Read-aloud prompts</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Module</label>
+      <select name="module" class="form-control">
+        <option value="vocabulary_lesson">Vocabulary Lesson</option>
+        <option value="sentence_rearrangement">Sentence Rearrangement</option>
+        <option value="fill_blank">Fill in the Blank</option>
+        <option value="reading_comprehension">Reading Comprehension</option>
+        <option value="daily_challenge_set">Daily Challenge Set</option>
+        <option value="scenario_roleplay">Real-Life Scenario</option>
+        <option value="analytical_english">Analytical English</option>
+        <option value="word_sentence_builder">Word to 5 Sentences</option>
       </select>
     </div>
     <div class="form-group">
@@ -223,21 +260,28 @@ include 'includes/header.php';
       <label class="form-label">Count</label>
       <input type="number" name="count" min="1" max="10" value="3" class="form-control">
     </div>
-    <button class="btn btn-primary" onclick="btnLoading(this,true)">Generate with AI</button>
+    <button class="btn btn-primary btn-ai" onclick="btnLoading(this,true)">Generate with AI</button>
   </form>
 </div>
 
-<div class="grid-2" style="gap:24px;align-items:start;">
+<div class="admin-tabs">
+  <button class="admin-tab active" type="button" data-admin-tab="practice">Practice Items</button>
+  <button class="admin-tab" type="button" data-admin-tab="challenge">Daily Challenges</button>
+  <button class="admin-tab" type="button" data-admin-tab="vocab">Vocabulary</button>
+  <button class="admin-tab" type="button" data-admin-tab="speaking">Read-Alouds</button>
+</div>
+
+<div class="admin-panel active" data-admin-panel="practice">
   <div class="card">
     <h3 style="font-size:16px;margin-bottom:14px;color:var(--text-1)">Add Practice Item</h3>
     <form method="POST">
       <input type="hidden" name="action" value="add_practice">
       <div class="grid-2">
-        <div class="form-group"><label class="form-label">Type</label><select name="type" class="form-control"><option value="better_english">Choose Better English</option><option value="grammar_choice">Grammar Choice</option><option value="vocabulary_quiz">Vocabulary Quiz</option><option value="writing_prompt">Writing Prompt</option><option value="speaking_prompt">Read Aloud</option></select></div>
+        <div class="form-group"><label class="form-label">Type</label><select name="type" class="form-control"><option value="better_english">Choose Better English</option><option value="grammar_choice">Grammar Choice</option><option value="vocabulary_quiz">Vocabulary Quiz</option><option value="writing_prompt">Writing Prompt</option><option value="speaking_prompt">Read Aloud</option><option value="sentence_rearrangement">Sentence Rearrangement</option><option value="fill_blank">Fill in the Blank</option><option value="reading_comprehension">Reading Comprehension</option><option value="daily_challenge_set">Daily Challenge Set</option><option value="scenario_roleplay">Real-Life Scenario</option><option value="analytical_english">Analytical English</option><option value="word_sentence_builder">Word to 5 Sentences</option></select></div>
         <div class="form-group"><label class="form-label">Level</label><select name="difficulty" class="form-control"><option>beginner</option><option>intermediate</option><option>advanced</option></select></div>
       </div>
-      <div class="form-group"><label class="form-label">Title</label><input name="title" class="form-control" required></div>
-      <div class="form-group"><label class="form-label">Prompt</label><textarea name="prompt" class="form-control" rows="3" required></textarea></div>
+      <div class="form-group"><label class="form-label">Title</label><input name="title" class="form-control" placeholder="e.g., Choose the correct sentence structure" required></div>
+      <div class="form-group"><label class="form-label">Prompt</label><textarea name="prompt" class="form-control" rows="3" placeholder="Write the question, passage, scenario, or read-aloud text." required></textarea></div>
       <div class="grid-3">
         <div class="form-group"><label class="form-label">Option A</label><textarea name="option_a" class="form-control" rows="2"></textarea></div>
         <div class="form-group"><label class="form-label">Option B</label><textarea name="option_b" class="form-control" rows="2"></textarea></div>
@@ -245,14 +289,21 @@ include 'includes/header.php';
       </div>
       <div class="grid-3">
         <div class="form-group"><label class="form-label">Correct Option</label><select name="correct_option" class="form-control"><option value="">Open-ended</option><option>A</option><option>B</option><option>C</option></select></div>
-        <div class="form-group"><label class="form-label">Category</label><input name="category" class="form-control" value="general"></div>
+        <div class="form-group"><label class="form-label">Category</label><input name="category" class="form-control" value="general" placeholder="grammar, work, travel"></div>
         <div class="form-group"><label class="form-label">XP</label><input type="number" name="xp_reward" class="form-control" value="25" min="5" max="200"></div>
+      </div>
+      <div class="grid-3">
+        <div class="form-group"><label class="form-label">Tags / Skills</label><input name="tags" class="form-control" placeholder="tenses, idioms, customer-service"></div>
+        <div class="form-group"><label class="form-label">Audio URL</label><input name="audio_url" class="form-control" placeholder="optional pronunciation audio URL"></div>
+        <div class="form-group"><label class="form-label">Status</label><label style="display:flex;gap:8px;align-items:center;color:var(--text-2);padding-top:12px;"><input type="checkbox" name="active" checked> Published</label></div>
       </div>
       <div class="form-group"><label class="form-label">Explanation / Expected Answer</label><textarea name="explanation" class="form-control" rows="3"></textarea></div>
       <button class="btn btn-primary">Save Practice Item</button>
     </form>
   </div>
+</div>
 
+<div class="admin-panel" data-admin-panel="challenge">
   <div class="card">
     <h3 style="font-size:16px;margin-bottom:14px;color:var(--text-1)">Add Daily Challenge</h3>
     <form method="POST">
@@ -261,48 +312,65 @@ include 'includes/header.php';
         <div class="form-group"><label class="form-label">Type</label><select name="type" class="form-control"><option>grammar</option><option>vocabulary</option><option>writing</option><option>speaking</option><option>listening</option></select></div>
         <div class="form-group"><label class="form-label">Date</label><input type="date" name="challenge_date" value="<?= date('Y-m-d') ?>" class="form-control"></div>
       </div>
-      <div class="form-group"><label class="form-label">Title</label><input name="title" class="form-control" required></div>
-      <div class="form-group"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="2"></textarea></div>
-      <div class="form-group"><label class="form-label">Content</label><textarea name="content" class="form-control" rows="4" required></textarea></div>
+      <div class="form-group"><label class="form-label">Title</label><input name="title" class="form-control" placeholder="e.g., Past tense correction challenge" required></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="2" placeholder="Short instruction users see before starting."></textarea></div>
+      <div class="form-group"><label class="form-label">Content</label><textarea name="content" class="form-control" rows="4" placeholder="Full question, prompt, or challenge instructions." required></textarea></div>
       <div class="grid-2">
         <div class="form-group"><label class="form-label">Level</label><select name="difficulty" class="form-control"><option>beginner</option><option>intermediate</option><option>advanced</option></select></div>
         <div class="form-group"><label class="form-label">XP</label><input type="number" name="xp_reward" value="50" class="form-control"></div>
       </div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Tags / Skills</label><input name="tags" class="form-control" placeholder="tenses, writing, speaking"></div>
+        <div class="form-group"><label class="form-label">Status</label><label style="display:flex;gap:8px;align-items:center;color:var(--text-2);padding-top:12px;"><input type="checkbox" name="active" checked> Published</label></div>
+      </div>
       <button class="btn btn-primary">Save Challenge</button>
     </form>
   </div>
+</div>
 
+<div class="admin-panel" data-admin-panel="vocab">
   <div class="card">
     <h3 style="font-size:16px;margin-bottom:14px;color:var(--text-1)">Add Vocabulary</h3>
     <form method="POST">
       <input type="hidden" name="action" value="add_vocab">
       <div class="grid-2">
-        <div class="form-group"><label class="form-label">Word</label><input name="word" class="form-control" required></div>
-        <div class="form-group"><label class="form-label">Pronunciation</label><input name="pronunciation" class="form-control"></div>
+        <div class="form-group"><label class="form-label">Word</label><input name="word" class="form-control" placeholder="e.g., concise" required></div>
+        <div class="form-group"><label class="form-label">Pronunciation</label><input name="pronunciation" class="form-control" placeholder="kun-SICE"></div>
       </div>
-      <div class="form-group"><label class="form-label">Meaning</label><textarea name="meaning" class="form-control" rows="3" required></textarea></div>
+      <div class="form-group"><label class="form-label">Meaning</label><textarea name="meaning" class="form-control" rows="3" placeholder="Simple learner-friendly definition." required></textarea></div>
       <div class="grid-2">
         <div class="form-group"><label class="form-label">Synonyms</label><input name="synonyms" class="form-control"></div>
         <div class="form-group"><label class="form-label">Antonyms</label><input name="antonyms" class="form-control"></div>
       </div>
-      <div class="form-group"><label class="form-label">Example Sentence</label><textarea name="example_sentence" class="form-control" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">Example Sentence</label><textarea name="example_sentence" class="form-control" rows="2" placeholder="Use the word naturally in one clear sentence."></textarea></div>
       <div class="grid-2">
         <div class="form-group"><label class="form-label">Level</label><select name="difficulty" class="form-control"><option>beginner</option><option>intermediate</option><option>advanced</option></select></div>
         <div class="form-group"><label class="form-label">Category</label><input name="category" class="form-control" value="general"></div>
       </div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Tags / Skills</label><input name="tags" class="form-control" placeholder="business, idioms, pronunciation"></div>
+        <div class="form-group"><label class="form-label">Status</label><label style="display:flex;gap:8px;align-items:center;color:var(--text-2);padding-top:12px;"><input type="checkbox" name="active" checked> Published</label></div>
+      </div>
       <button class="btn btn-primary">Save Word</button>
     </form>
   </div>
+</div>
 
+<div class="admin-panel" data-admin-panel="speaking">
   <div class="card">
     <h3 style="font-size:16px;margin-bottom:14px;color:var(--text-1)">Add Read-Aloud Prompt</h3>
     <form method="POST">
       <input type="hidden" name="action" value="add_speaking_prompt">
-      <div class="form-group"><label class="form-label">Text to Read</label><textarea name="text" class="form-control" rows="5" required></textarea></div>
+      <div class="form-group"><label class="form-label">Text to Read</label><textarea name="text" class="form-control" rows="5" placeholder="Write a short passage the learner should read aloud." required></textarea></div>
       <div class="grid-3">
         <div class="form-group"><label class="form-label">Topic</label><input name="topic" class="form-control" value="General"></div>
         <div class="form-group"><label class="form-label">Level</label><select name="difficulty" class="form-control"><option>beginner</option><option>intermediate</option><option>advanced</option></select></div>
         <div class="form-group"><label class="form-label">Category</label><input name="category" class="form-control" value="general"></div>
+      </div>
+      <div class="grid-3">
+        <div class="form-group"><label class="form-label">Tags / Skills</label><input name="tags" class="form-control" placeholder="pronunciation, fluency, work"></div>
+        <div class="form-group"><label class="form-label">Audio URL</label><input name="audio_url" class="form-control" placeholder="optional TTS or recording URL"></div>
+        <div class="form-group"><label class="form-label">Status</label><label style="display:flex;gap:8px;align-items:center;color:var(--text-2);padding-top:12px;"><input type="checkbox" name="active" checked> Published</label></div>
       </div>
       <button class="btn btn-primary">Save Prompt</button>
     </form>
@@ -355,5 +423,17 @@ include 'includes/header.php';
     </table>
   </div>
 </div>
+
+<script>
+document.querySelectorAll('[data-admin-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.adminTab;
+    document.querySelectorAll('[data-admin-tab]').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('[data-admin-panel]').forEach(panel => {
+      panel.classList.toggle('active', panel.dataset.adminPanel === tab);
+    });
+  });
+});
+</script>
 
 <?php include 'includes/footer.php'; ?>

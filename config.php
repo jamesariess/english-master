@@ -100,6 +100,44 @@ function jsonFromAI($text) {
     return null;
 }
 
+function practiceTypes() {
+    return [
+        'better_english',
+        'grammar_choice',
+        'vocabulary_quiz',
+        'writing_prompt',
+        'speaking_prompt',
+        'sentence_rearrangement',
+        'fill_blank',
+        'reading_comprehension',
+        'daily_challenge_set',
+        'scenario_roleplay',
+        'analytical_english',
+        'word_sentence_builder'
+    ];
+}
+
+function learningModulePrompt($module, $level, $topic = '', $answer = '') {
+    $level = in_array($level, ['Beginner', 'Intermediate', 'Advanced'], true) ? $level : 'Beginner';
+    $topic = trim($topic) ?: 'daily English';
+    $base = "You are an advanced English Learning AI Tutor inside a web application. Adjust difficulty to $level. Keep responses educational, structured, concise, and clear. Never skip explanations.";
+
+    $templates = [
+        'vocabulary_lesson' => "TASK: Generate Vocabulary Lesson about $topic.\nOUTPUT FORMAT:\nWord: {word}\nLevel: {$level}\nMeaning:\n{simple definition}\n\nSynonyms:\n- ...\n- ...\n\nAntonyms:\n- ...\n- ...\n\nExample Sentences (VERY IMPORTANT):\n1. {sentence using word}\n2. {sentence using word}\n3. {sentence using word}\n4. {sentence using word}\n5. {sentence using word}\n\nPronunciation Tip:\n{simple pronunciation guide}",
+        'sentence_rearrangement' => "TASK: Create scrambled sentence about $topic.\nOUTPUT FORMAT:\nScrambled Words:\n{shuffled words}\n\nDifficulty: {$level}\n\nHint (optional):\n{grammar clue}\n\nCorrect Answer (for system validation only):\n{correct sentence}",
+        'fill_blank' => "TASK: Generate fill in the blank question about $topic.\nOUTPUT FORMAT:\nSentence:\n{sentence with blank}\n\nOptions:\nA. {option}\nB. {option}\nC. {option}\nD. {option}\n\nCorrect Answer: {letter}\n\nExplanation:\n{why correct answer is right}",
+        'reading_comprehension' => "TASK: Generate passage + questions about $topic.\nOUTPUT FORMAT:\nTitle: {title}\n\nPassage:\n{short paragraph 100-200 words}\n\nQuestions:\n1. {question}\n2. {question}\n3. {question}\n\nAnswers:\n1. {answer + explanation}\n2. {answer + explanation}\n3. {answer + explanation}",
+        'daily_challenge_set' => "TASK: Generate daily practice set about $topic.\nOUTPUT FORMAT:\nDaily Challenge - Level: {$level}\n\nGrammar (5 questions)\n1. ...\n2. ...\n3. ...\n4. ...\n5. ...\n\nVocabulary (1 word)\n\nWord: {word}\n\nSpeaking Task\n\nSpeak or type:\n\"{prompt}\"\n\nConversation Task\n\nReply naturally to:\n\"{scenario}\"",
+        'scenario_roleplay' => "TASK: Roleplay situation about $topic.\nOUTPUT FORMAT:\nScenario: {example}\n\nSituation:\n{short description}\n\nUser Task:\nChoose or type your response\n\nAI Response Options:\nA. {bad answer}\nB. {okay answer}\nC. {best answer}\n\nBest Answer Explanation:\n{why it is best}",
+        'analytical_english' => $answer
+            ? "TASK: Evaluate this analytical English answer.\nQuestion/topic: $topic\nLearner answer: $answer\nOUTPUT FORMAT:\nQuestion:\n{real-life thinking question}\n\nUser Task:\nAnswer in 3-5 sentences\n\nEvaluation Criteria:\n\nGrammar (0-100): {score}\nClarity (0-100): {score}\nLogic (0-100): {score}\nVocabulary (0-100): {score}\n\nAI Feedback:\n\nCorrections\n{corrections}\n\nImproved version of answer\n{improved answer}\n\nExplanation of mistakes\n{explanation}"
+            : "TASK: Critical thinking in English about $topic.\nOUTPUT FORMAT:\nQuestion:\n{real-life thinking question}\n\nUser Task:\nAnswer in 3-5 sentences\n\nEvaluation Criteria:\n\nGrammar (0-100)\nClarity (0-100)\nLogic (0-100)\nVocabulary (0-100)\n\nAI Feedback:\n\nCorrections\nImproved version of answer\nExplanation of mistakes",
+        'word_sentence_builder' => "TASK: Generate vocabulary + practice sentences about $topic.\nOUTPUT FORMAT:\nWord: {word}\nLevel: {$level}\n\nMeaning:\n{simple meaning}\n\nMake 5 Sentences Using the Word:\n1. {sentence 1}\n2. {sentence 2}\n3. {sentence 3}\n4. {sentence 4}\n5. {sentence 5}\n\nUsage Tip:\n\n{how to use the word naturally in real life}"
+    ];
+
+    return $base . "\n\n" . ($templates[$module] ?? $templates['vocabulary_lesson']);
+}
+
 // --- Escape for DB ---
 function esc($str) {
     return db()->real_escape_string($str);
@@ -193,11 +231,49 @@ function callAI($messages, $system = '', $maxTokens = 1500) {
 // --- Auto-migrate: create new tables if they don't exist ---
 // This runs once per session so old installs get upgraded automatically
 function ensureNewTables() {
-    if (!empty($_SESSION['tables_checked'])) return;
+    $schemaVersion = '2026-05-27-learning-modules';
+    if (($_SESSION['tables_checked'] ?? '') === $schemaVersion) return;
     $db = db();
     $col = $db->query("SHOW COLUMNS FROM users LIKE 'role'");
     if ($col && $col->num_rows === 0) {
         $db->query("ALTER TABLE users ADD role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER english_level");
+    }
+    $col = $db->query("SHOW COLUMNS FROM vocabulary LIKE 'tags'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE vocabulary ADD tags VARCHAR(255) DEFAULT '' AFTER category");
+    }
+    $col = $db->query("SHOW COLUMNS FROM vocabulary LIKE 'active'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE vocabulary ADD active TINYINT(1) DEFAULT 1 AFTER tags");
+    }
+    $col = $db->query("SHOW COLUMNS FROM challenges LIKE 'tags'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE challenges ADD tags VARCHAR(255) DEFAULT '' AFTER difficulty");
+    }
+    $col = $db->query("SHOW COLUMNS FROM challenges LIKE 'active'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE challenges ADD active TINYINT(1) DEFAULT 1 AFTER tags");
+    }
+    $db->query("ALTER TABLE practice_items MODIFY type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt','sentence_rearrangement','fill_blank','reading_comprehension','daily_challenge_set','scenario_roleplay','analytical_english','word_sentence_builder') NOT NULL DEFAULT 'better_english'");
+    $col = $db->query("SHOW COLUMNS FROM practice_items LIKE 'tags'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE practice_items ADD tags VARCHAR(255) DEFAULT '' AFTER category");
+    }
+    $col = $db->query("SHOW COLUMNS FROM practice_items LIKE 'audio_url'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE practice_items ADD audio_url VARCHAR(255) DEFAULT '' AFTER tags");
+    }
+    $col = $db->query("SHOW COLUMNS FROM speaking_prompts LIKE 'tags'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE speaking_prompts ADD tags VARCHAR(255) DEFAULT '' AFTER category");
+    }
+    $col = $db->query("SHOW COLUMNS FROM speaking_prompts LIKE 'audio_url'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE speaking_prompts ADD audio_url VARCHAR(255) DEFAULT '' AFTER tags");
+    }
+    $col = $db->query("SHOW COLUMNS FROM speaking_prompts LIKE 'active'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE speaking_prompts ADD active TINYINT(1) DEFAULT 1 AFTER audio_url");
     }
     $db->query("CREATE TABLE IF NOT EXISTS speaking_sessions (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -216,11 +292,14 @@ function ensureNewTables() {
         topic VARCHAR(100) DEFAULT 'General',
         difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
         category VARCHAR(50) DEFAULT 'general',
+        tags VARCHAR(255) DEFAULT '',
+        audio_url VARCHAR(255) DEFAULT '',
+        active TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
     $db->query("CREATE TABLE IF NOT EXISTS practice_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt') NOT NULL DEFAULT 'better_english',
+        type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt','sentence_rearrangement','fill_blank','reading_comprehension','daily_challenge_set','scenario_roleplay','analytical_english','word_sentence_builder') NOT NULL DEFAULT 'better_english',
         title VARCHAR(200) NOT NULL,
         prompt TEXT NOT NULL,
         option_a TEXT,
@@ -230,6 +309,8 @@ function ensureNewTables() {
         explanation TEXT,
         difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
         category VARCHAR(80) DEFAULT 'general',
+        tags VARCHAR(255) DEFAULT '',
+        audio_url VARCHAR(255) DEFAULT '',
         xp_reward INT DEFAULT 25,
         active TINYINT(1) DEFAULT 1,
         created_by INT NULL,
@@ -280,7 +361,7 @@ function ensureNewTables() {
         $pass = esc(password_hash('admin123', PASSWORD_BCRYPT));
         $db->query("INSERT INTO users (name,email,password,english_level,role,avatar,last_active) VALUES ('Admin','admin@englishmaster.local','$pass','advanced','admin','A',CURDATE())");
     }
-    $_SESSION['tables_checked'] = true;
+    $_SESSION['tables_checked'] = $schemaVersion;
 }
 
 // Run migration automatically for logged-in users

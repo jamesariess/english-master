@@ -317,7 +317,7 @@ window.addEventListener('load', function() {
         <span class="nav-icon">⚡</span><span class="nav-label">Daily Challenges</span>
       </a>
       <a href="<?= APP_URL ?>/practice.php" class="nav-item <?= $currentPage==='practice'?'active':'' ?>">
-        <span class="nav-icon">âœ“</span><span class="nav-label">Practice Lab</span>
+        <span class="nav-icon">PL</span><span class="nav-label">Practice Lab</span>
       </a>
       <a href="<?= APP_URL ?>/speaking.php" class="nav-item <?= $currentPage==='speaking'?'active':'' ?>">
         <span class="nav-icon">🎤</span><span class="nav-label">Speaking Practice</span>
@@ -330,7 +330,7 @@ window.addEventListener('load', function() {
       </a>
       <?php if (isAdmin($user)): ?>
       <a href="<?= APP_URL ?>/admin.php" class="nav-item <?= $currentPage==='admin'?'active':'' ?>">
-        <span class="nav-icon">âš™</span><span class="nav-label">Admin Panel</span>
+        <span class="nav-icon">AD</span><span class="nav-label">Admin Panel</span>
       </a>
       <?php endif; ?>
     </nav>

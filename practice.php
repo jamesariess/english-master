@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_practice'])) {
     }
 
     if ($item) {
-        $isChoice = in_array($item['type'], ['better_english', 'grammar_choice', 'vocabulary_quiz'], true);
+        $isChoice = in_array($item['type'], ['better_english', 'grammar_choice', 'vocabulary_quiz', 'fill_blank', 'scenario_roleplay'], true);
         $isCorrect = 0;
         $feedback = '';
 
@@ -131,6 +131,20 @@ include 'includes/header.php';
   </div>
 </div>
 
+<div class="card mb-24" style="padding:18px 20px;">
+  <h3 style="font-size:16px;margin-bottom:14px;color:var(--text-1)">AI Exercise Pages</h3>
+  <div class="grid-4" style="gap:10px;">
+    <a class="btn btn-outline btn-sm" href="vocabulary_lesson.php">Vocabulary Lesson</a>
+    <a class="btn btn-outline btn-sm" href="sentence_builder.php">Word to 5 Sentences</a>
+    <a class="btn btn-outline btn-sm" href="sentence_rearrangement.php">Rearrangement</a>
+    <a class="btn btn-outline btn-sm" href="fill_blank.php">Fill Blank</a>
+    <a class="btn btn-outline btn-sm" href="reading_comprehension.php">Reading</a>
+    <a class="btn btn-outline btn-sm" href="daily_practice.php">Daily Set</a>
+    <a class="btn btn-outline btn-sm" href="scenario_practice.php">Scenarios</a>
+    <a class="btn btn-outline btn-sm" href="analytical_english.php">Analytical English</a>
+  </div>
+</div>
+
 <div class="card mb-16" style="padding:16px 20px;">
   <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
     <select name="type" class="form-control" style="width:220px">
@@ -140,6 +154,12 @@ include 'includes/header.php';
       <option value="vocabulary_quiz" <?= $type==='vocabulary_quiz'?'selected':'' ?>>Vocabulary Quiz</option>
       <option value="writing_prompt" <?= $type==='writing_prompt'?'selected':'' ?>>Writing Prompt</option>
       <option value="speaking_prompt" <?= $type==='speaking_prompt'?'selected':'' ?>>Read Aloud</option>
+      <option value="sentence_rearrangement" <?= $type==='sentence_rearrangement'?'selected':'' ?>>Sentence Rearrangement</option>
+      <option value="fill_blank" <?= $type==='fill_blank'?'selected':'' ?>>Fill in the Blank</option>
+      <option value="reading_comprehension" <?= $type==='reading_comprehension'?'selected':'' ?>>Reading Comprehension</option>
+      <option value="scenario_roleplay" <?= $type==='scenario_roleplay'?'selected':'' ?>>Scenario Roleplay</option>
+      <option value="analytical_english" <?= $type==='analytical_english'?'selected':'' ?>>Analytical English</option>
+      <option value="word_sentence_builder" <?= $type==='word_sentence_builder'?'selected':'' ?>>Word to 5 Sentences</option>
     </select>
     <select name="difficulty" class="form-control" style="width:170px">
       <option value="all" <?= $difficulty==='all'?'selected':'' ?>>All levels</option>
@@ -155,7 +175,7 @@ include 'includes/header.php';
 <?php if ($items && $items->num_rows > 0): ?>
 <div class="grid-2" style="gap:16px;align-items:start;">
   <?php while ($item = $items->fetch_assoc()):
-    $isChoice = in_array($item['type'], ['better_english', 'grammar_choice', 'vocabulary_quiz'], true);
+    $isChoice = in_array($item['type'], ['better_english', 'grammar_choice', 'vocabulary_quiz', 'fill_blank', 'scenario_roleplay'], true);
     $typeLabel = ucwords(str_replace('_', ' ', $item['type']));
   ?>
   <div class="challenge-card <?= (int)$item['mastered'] ? 'completed' : 'active' ?>">

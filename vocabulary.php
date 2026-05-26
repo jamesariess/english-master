@@ -37,7 +37,7 @@ $search = trim($_GET['search'] ?? '');
 $difficulty = $_GET['difficulty'] ?? 'all';
 
 // Build query
-$where = ['1=1'];
+$where = ['v.active=1'];
 if ($difficulty !== 'all') $where[] = "v.difficulty='" . esc($difficulty) . "'";
 if ($search) $where[] = "(v.word LIKE '%" . esc($search) . "%' OR v.meaning LIKE '%" . esc($search) . "%')";
 $whereStr = implode(' AND ', $where);
