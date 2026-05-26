@@ -14,6 +14,7 @@ define('DB_NAME', 'english_master_db');
 define('GROQ_API_KEY', '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');   // ← Get from https://console.groq.com/keys
 define('GROQ_MODEL', 'openai/gpt-oss-120b');
 
+
 // --- App Settings ---
 define('APP_NAME', 'EnglishMaster AI');
 define('APP_URL', 'http://localhost/english-master');
@@ -100,6 +101,7 @@ function updateStreak($uid) {
     }
 }
 
+// --- Call Anthropic Claude API ---
 function callAI($messages, $system = '', $maxTokens = 1500) {
     $key = GROQ_API_KEY;
   if (empty($key) || $key === 'your_groq_api_key_here') {
