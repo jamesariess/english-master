@@ -500,6 +500,53 @@ include 'includes/header.php';
    - All errors shown visibly on screen
    ============================================================ */
 
+/* ── 0. Utility helpers (fallbacks if not defined by header.php) ── */
+
+/** btnLoading(btn, on)
+ *  Shows/hides a loading spinner on a button and disables it while loading.
+ */
+if (typeof btnLoading === 'undefined') {
+  window.btnLoading = function(btn, on) {
+    if (!btn) return;
+    if (on) {
+      btn._origText = btn.innerHTML;
+      btn.disabled  = true;
+      btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px">'
+                    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" '
+                    + 'style="animation:spin 0.8s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83'
+                    + 'M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>'
+                    + 'Analysing...</span>';
+      if (!document.getElementById('_spin_style')) {
+        const s = document.createElement('style');
+        s.id = '_spin_style';
+        s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(s);
+      }
+    } else {
+      btn.disabled  = false;
+      if (btn._origText) { btn.innerHTML = btn._origText; btn._origText = null; }
+    }
+  };
+}
+
+/** emToast(msg, type, duration)
+ *  Lightweight toast notification fallback.
+ *  type: 'info' | 'warn' | 'err' | 'xp'
+ */
+if (typeof emToast === 'undefined') {
+  window.emToast = function(msg, type, duration) {
+    duration = duration || 3500;
+    const colors = { info:'#4f8ef7', warn:'#fbbf24', err:'#f87171', xp:'#34d399' };
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;padding:10px 18px;border-radius:10px;'
+      + 'font-size:13px;font-weight:600;color:#fff;background:' + (colors[type] || '#4f8ef7') + ';'
+      + 'box-shadow:0 4px 20px rgba(0,0,0,0.25);transition:opacity 0.4s;max-width:320px;word-break:break-word;';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, duration);
+  };
+}
+
 /* ── 1. Browser support check ── */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
