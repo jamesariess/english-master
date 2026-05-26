@@ -276,6 +276,15 @@ include 'includes/header.php';
 </div>
 
 <div class="admin-panel active" data-admin-panel="practice">
+  <div class="card mb-16" style="background:var(--bg-base);">
+    <h3 style="font-size:15px;margin-bottom:10px;color:var(--text-1)">Manual Content Rules</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;color:var(--text-2);font-size:13px;line-height:1.6;">
+      <div><strong style="color:var(--text-1)">Sentence Rearrangement:</strong> put the correct sentence in <em>Option A</em> and <em>Answer Key</em>.</div>
+      <div><strong style="color:var(--text-1)">Fill the Blank:</strong> prompt must contain <em>____</em>, options A-D are choices, set Correct Option and Answer Key.</div>
+      <div><strong style="color:var(--text-1)">Reading:</strong> prompt is the story, options A-C are questions, Answer Key contains numbered answers.</div>
+      <div><strong style="color:var(--text-1)">Scenario/Analytical:</strong> prompt is the situation or question, explanation is the teacher guidance.</div>
+    </div>
+  </div>
   <div class="card">
     <h3 style="font-size:16px;margin-bottom:14px;color:var(--text-1)">Add Practice Item</h3>
     <form method="POST">
