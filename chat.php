@@ -6,6 +6,19 @@ $db   = db();
 $uid  = (int)$_SESSION['uid'];
 $pageTitle = 'AI Chat';
 
+/* ── Auto-create chat_history table if missing ── */
+$db->query("
+    CREATE TABLE IF NOT EXISTS chat_history (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        user_id    INT NOT NULL,
+        role       ENUM('user','assistant') NOT NULL,
+        content    TEXT NOT NULL,
+        session_id VARCHAR(32) DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+");
+
 /* ── Session ID ── */
 $sessionId = $_GET['session'] ?? $_SESSION['chat_session'] ?? null;
 if (!$sessionId) {
@@ -231,6 +244,22 @@ include 'includes/header.php';
 </div>
 
 <script>
+/* ── emToast fallback (in case header.php doesn't define it) ── */
+if (typeof emToast === 'undefined') {
+  window.emToast = function(msg, type, duration) {
+    duration = duration || 3500;
+    const colors = { info:'#4f8ef7', warn:'#fbbf24', err:'#f87171', xp:'#34d399' };
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;padding:10px 18px;' +
+      'border-radius:10px;font-size:13px;font-weight:600;color:#fff;background:' +
+      (colors[type] || '#4f8ef7') + ';box-shadow:0 4px 20px rgba(0,0,0,0.25);' +
+      'transition:opacity 0.4s;max-width:320px;word-break:break-word;';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, duration);
+  };
+}
+
 /* ═══════════════════════════════════════════════════
    Chat Engine  — clean rebuild
    ═══════════════════════════════════════════════════ */
@@ -332,7 +361,8 @@ async function sendMessage() {
   showTyping();
 
   try {
-    const resp = await fetch('chat.php', {
+    const fetchUrl = window.location.pathname.replace(/\/[^/]*$/, '') + '/chat.php';
+    const resp = await fetch(fetchUrl, {
       method:  'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body:    'ajax=1&message=' + encodeURIComponent(msg)
@@ -372,10 +402,15 @@ async function sendMessage() {
 
   } catch(networkErr) {
     hideTyping();
+    console.error('[chat fetch error]', networkErr);
+    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const hint = isLocal
+      ? 'Make sure XAMPP Apache is running and you are visiting via <strong>http://localhost/...</strong> (not file://).'
+      : 'The server could not be reached. Check your internet connection or server status.';
     addBubble('ai',
-      '<span style="color:var(--red)">❌ Could not reach the server. ' +
-      'Make sure XAMPP Apache is running.</span>');
-    emToast('Connection failed', 'err');
+      '<span style="color:var(--red)">❌ Could not reach the server.</span><br>' +
+      '<span style="font-size:12px;color:var(--text-2)">' + hint + '</span>');
+    emToast('Connection failed — ' + networkErr.message, 'err', 5000);
   }
 
   unlockSend();
