@@ -196,7 +196,7 @@ include 'includes/header.php';
       <input type="hidden" name="item_id" value="<?= (int)$item['id'] ?>">
       <?php if ($isChoice): ?>
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
-          <?php foreach (['A','B','C'] as $letter):
+          <?php foreach (['A','B','C','D'] as $letter):
             $key = 'option_' . strtolower($letter);
             if (empty($item[$key])) continue;
           ?>

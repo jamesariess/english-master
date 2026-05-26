@@ -319,6 +319,30 @@ window.addEventListener('load', function() {
       <a href="<?= APP_URL ?>/practice.php" class="nav-item <?= $currentPage==='practice'?'active':'' ?>">
         <span class="nav-icon">PL</span><span class="nav-label">Practice Lab</span>
       </a>
+      <a href="<?= APP_URL ?>/sentence_rearrangement.php" class="nav-item <?= $currentPage==='sentence_rearrangement'?'active':'' ?>">
+        <span class="nav-icon">SR</span><span class="nav-label">Rearrange Sentences</span>
+      </a>
+      <a href="<?= APP_URL ?>/fill_blank.php" class="nav-item <?= $currentPage==='fill_blank'?'active':'' ?>">
+        <span class="nav-icon">FB</span><span class="nav-label">Fill the Blank</span>
+      </a>
+      <a href="<?= APP_URL ?>/reading_comprehension.php" class="nav-item <?= $currentPage==='reading_comprehension'?'active':'' ?>">
+        <span class="nav-icon">RC</span><span class="nav-label">Reading Practice</span>
+      </a>
+      <a href="<?= APP_URL ?>/vocabulary_lesson.php" class="nav-item <?= $currentPage==='vocabulary_lesson'?'active':'' ?>">
+        <span class="nav-icon">VL</span><span class="nav-label">Vocabulary Lesson</span>
+      </a>
+      <a href="<?= APP_URL ?>/sentence_builder.php" class="nav-item <?= $currentPage==='sentence_builder'?'active':'' ?>">
+        <span class="nav-icon">SB</span><span class="nav-label">5 Sentence Builder</span>
+      </a>
+      <a href="<?= APP_URL ?>/daily_practice.php" class="nav-item <?= $currentPage==='daily_practice'?'active':'' ?>">
+        <span class="nav-icon">DP</span><span class="nav-label">Daily Practice Set</span>
+      </a>
+      <a href="<?= APP_URL ?>/scenario_practice.php" class="nav-item <?= $currentPage==='scenario_practice'?'active':'' ?>">
+        <span class="nav-icon">SP</span><span class="nav-label">Scenario Practice</span>
+      </a>
+      <a href="<?= APP_URL ?>/analytical_english.php" class="nav-item <?= $currentPage==='analytical_english'?'active':'' ?>">
+        <span class="nav-icon">AE</span><span class="nav-label">Analytical English</span>
+      </a>
       <a href="<?= APP_URL ?>/speaking.php" class="nav-item <?= $currentPage==='speaking'?'active':'' ?>">
         <span class="nav-icon">🎤</span><span class="nav-label">Speaking Practice</span>
       </a>

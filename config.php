@@ -231,7 +231,7 @@ function callAI($messages, $system = '', $maxTokens = 1500) {
 // --- Auto-migrate: create new tables if they don't exist ---
 // This runs once per session so old installs get upgraded automatically
 function ensureNewTables() {
-    $schemaVersion = '2026-05-27-learning-modules';
+    $schemaVersion = '2026-05-27-interactive-tasks';
     if (($_SESSION['tables_checked'] ?? '') === $schemaVersion) return;
     $db = db();
     $col = $db->query("SHOW COLUMNS FROM users LIKE 'role'");
@@ -305,7 +305,9 @@ function ensureNewTables() {
         option_a TEXT,
         option_b TEXT,
         option_c TEXT,
+        option_d TEXT,
         correct_option CHAR(1),
+        answer_key TEXT,
         explanation TEXT,
         difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
         category VARCHAR(80) DEFAULT 'general',
@@ -317,6 +319,14 @@ function ensureNewTables() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
     )");
+    $col = $db->query("SHOW COLUMNS FROM practice_items LIKE 'option_d'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE practice_items ADD option_d TEXT AFTER option_c");
+    }
+    $col = $db->query("SHOW COLUMNS FROM practice_items LIKE 'answer_key'");
+    if ($col && $col->num_rows === 0) {
+        $db->query("ALTER TABLE practice_items ADD answer_key TEXT AFTER correct_option");
+    }
     $db->query("CREATE TABLE IF NOT EXISTS user_practice_attempts (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
@@ -343,6 +353,24 @@ function ensureNewTables() {
             ('Effective communication in a professional environment requires grammatical accuracy and cultural awareness.','Communication','advanced','work'),
             ('Every day I try to learn five new English words. I write them in my notebook and practice using them in sentences.','Study Habits','beginner','general'),
             ('Please hold the line while I transfer your call to the correct department. Thank you for your patience.','Call Center','intermediate','work')
+        ");
+    }
+    $r = $db->query("SELECT COUNT(*) AS c FROM practice_items WHERE type='sentence_rearrangement'");
+    if ($r && (int)$r->fetch_assoc()['c'] === 0) {
+        $db->query("INSERT INTO practice_items (type,title,prompt,option_a,answer_key,explanation,difficulty,category,tags,xp_reward) VALUES
+            ('sentence_rearrangement','Build a Simple Sentence','Drag the words into the correct order.','The bird can fly.','The bird can fly.','English sentences usually follow subject + helping verb + main verb. Here, \"The bird\" is the subject, \"can\" is the helping verb, and \"fly\" is the action.','beginner','grammar','word order, sentence structure',25)
+        ");
+    }
+    $r = $db->query("SELECT COUNT(*) AS c FROM practice_items WHERE type='fill_blank'");
+    if ($r && (int)$r->fetch_assoc()['c'] === 0) {
+        $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,option_d,correct_option,answer_key,explanation,difficulty,category,tags,xp_reward) VALUES
+            ('fill_blank','Choose the Right Preposition','She is interested ____ learning English.','on','in','at','for','B','in','Use \"interested in\" before a noun or gerund. The natural phrase is \"interested in learning English.\"','beginner','grammar','prepositions, gerunds',25)
+        ");
+    }
+    $r = $db->query("SELECT COUNT(*) AS c FROM practice_items WHERE type='reading_comprehension'");
+    if ($r && (int)$r->fetch_assoc()['c'] === 0) {
+        $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,answer_key,explanation,difficulty,category,tags,xp_reward) VALUES
+            ('reading_comprehension','Maria Practices Every Day','Maria wants to speak English more confidently at work. Every morning, she reads one short paragraph aloud before breakfast. At lunch, she writes five new words in her notebook and makes her own sentences. In the evening, she talks with an AI tutor for ten minutes. After one month, Maria notices that she can answer customers faster and explain ideas more clearly. She still makes mistakes, but she understands them and corrects them quickly.','Why does Maria practice English?','What does she do at lunch?','How does Maria improve after one month?','1. She wants to speak more confidently at work. 2. She writes five new words and makes sentences. 3. She answers customers faster and explains ideas more clearly.','Good answers should use details from the story. The key idea is that small daily habits help Maria improve her workplace English.','beginner','reading','main idea, details',35)
         ");
     }
     $r = $db->query("SELECT COUNT(*) AS c FROM practice_items");

@@ -95,8 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $optionA = esc($_POST['option_a'] ?? '');
         $optionB = esc($_POST['option_b'] ?? '');
         $optionC = esc($_POST['option_c'] ?? '');
+        $optionD = esc($_POST['option_d'] ?? '');
         $correct = strtoupper(substr(trim($_POST['correct_option'] ?? ''), 0, 1));
-        $correct = in_array($correct, ['A','B','C'], true) ? $correct : null;
+        $correct = in_array($correct, ['A','B','C','D'], true) ? $correct : null;
+        $answerKey = esc($_POST['answer_key'] ?? '');
         $explanation = esc($_POST['explanation'] ?? '');
         $difficulty = esc(validDifficulty($_POST['difficulty'] ?? 'beginner'));
         $category = esc($_POST['category'] ?? 'general');
@@ -107,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($title && $prompt) {
             $correctSql = $correct ? "'" . esc($correct) . "'" : "NULL";
-            $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct_option,explanation,difficulty,category,tags,audio_url,xp_reward,active,created_by) VALUES ('$type','$title','$prompt','$optionA','$optionB','$optionC',$correctSql,'$explanation','$difficulty','$category','$tags','$audioUrl',$xp,$active,$uid)");
+            $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,option_d,correct_option,answer_key,explanation,difficulty,category,tags,audio_url,xp_reward,active,created_by) VALUES ('$type','$title','$prompt','$optionA','$optionB','$optionC','$optionD',$correctSql,'$answerKey','$explanation','$difficulty','$category','$tags','$audioUrl',$xp,$active,$uid)");
             adminRedirect('Practice item added.');
         }
         adminRedirect('Practice title and prompt are required.', 'warn');
@@ -132,7 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prompt = learningModulePrompt($module, ucfirst($difficulty), $topic);
             $prompt .= "\n\nReturn this as one saved item in JSON too: {\"items\":[{\"type\":\"" . esc(validPracticeType($module === 'vocabulary_lesson' ? 'word_sentence_builder' : $module)) . "\",\"title\":\"\",\"prompt\":\"full formatted exercise text\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"correct_option\":\"\",\"explanation\":\"teaching notes\",\"category\":\"$topic\",\"tags\":\"$topic\",\"xp_reward\":25}]}";
         } else {
-            $prompt .= " JSON format: {\"items\":[{\"type\":\"better_english|grammar_choice|vocabulary_quiz|writing_prompt|speaking_prompt|sentence_rearrangement|fill_blank|reading_comprehension|daily_challenge_set|scenario_roleplay|analytical_english|word_sentence_builder\",\"title\":\"\",\"prompt\":\"\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"correct_option\":\"A|B|C or empty\",\"explanation\":\"\",\"category\":\"\",\"tags\":\"comma skill tags\",\"xp_reward\":25}]}";
+            $prompt .= " JSON format: {\"items\":[{\"type\":\"better_english|grammar_choice|vocabulary_quiz|writing_prompt|speaking_prompt|sentence_rearrangement|fill_blank|reading_comprehension|daily_challenge_set|scenario_roleplay|analytical_english|word_sentence_builder\",\"title\":\"\",\"prompt\":\"\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"option_d\":\"\",\"correct_option\":\"A|B|C|D or empty\",\"answer_key\":\"correct sentence, word, or reading answer key\",\"explanation\":\"why the answer is correct\",\"category\":\"\",\"tags\":\"comma skill tags\",\"xp_reward\":25}]}";
+            $prompt .= " Rules: for sentence_rearrangement, prompt is the student instruction and option_a plus answer_key must be the correct sentence. For fill_blank, prompt must contain ____ and options A-D must be possible words. For reading_comprehension, prompt must be a 100-200 word story, option_a/option_b/option_c must be questions, and answer_key must contain numbered answers with explanations.";
         }
 
         $ai = callAI([['role' => 'user', 'content' => $prompt]], $system, 2000);
@@ -160,16 +163,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cat = esc($item['category'] ?? 'speaking'); $diff = esc($difficulty);
                 $db->query("INSERT INTO speaking_prompts (text,topic,difficulty,category) VALUES ('$text','$topicEsc','$diff','$cat')");
                 $created++;
-            } elseif ($target === 'practice' && !empty($item['title']) && !empty($item['prompt'])) {
+            } elseif (($target === 'practice' || $target === 'strict_module') && !empty($item['title']) && !empty($item['prompt'])) {
                 $type = esc(validPracticeType($item['type'] ?? 'better_english'));
                 $title = esc($item['title']); $promptEsc = esc($item['prompt']);
-                $a = esc($item['option_a'] ?? ''); $b = esc($item['option_b'] ?? ''); $c = esc($item['option_c'] ?? '');
+                $a = esc($item['option_a'] ?? ''); $b = esc($item['option_b'] ?? ''); $c = esc($item['option_c'] ?? ''); $d = esc($item['option_d'] ?? '');
                 $correct = strtoupper(substr(trim($item['correct_option'] ?? ''), 0, 1));
-                $correctSql = in_array($correct, ['A','B','C'], true) ? "'" . esc($correct) . "'" : "NULL";
+                $correctSql = in_array($correct, ['A','B','C','D'], true) ? "'" . esc($correct) . "'" : "NULL";
+                $answerKey = esc($item['answer_key'] ?? '');
                 $explanation = esc($item['explanation'] ?? '');
                 $cat = esc($item['category'] ?? $topic); $tags = esc($item['tags'] ?? $topic); $diff = esc($difficulty);
                 $xp = max(5, min(200, (int)($item['xp_reward'] ?? 25)));
-                $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct_option,explanation,difficulty,category,tags,xp_reward,active,created_by) VALUES ('$type','$title','$promptEsc','$a','$b','$c',$correctSql,'$explanation','$diff','$cat','$tags',$xp,1,$uid)");
+                $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,option_d,correct_option,answer_key,explanation,difficulty,category,tags,xp_reward,active,created_by) VALUES ('$type','$title','$promptEsc','$a','$b','$c','$d',$correctSql,'$answerKey','$explanation','$diff','$cat','$tags',$xp,1,$uid)");
                 $created++;
             }
         }
@@ -282,16 +286,18 @@ include 'includes/header.php';
       </div>
       <div class="form-group"><label class="form-label">Title</label><input name="title" class="form-control" placeholder="e.g., Choose the correct sentence structure" required></div>
       <div class="form-group"><label class="form-label">Prompt</label><textarea name="prompt" class="form-control" rows="3" placeholder="Write the question, passage, scenario, or read-aloud text." required></textarea></div>
-      <div class="grid-3">
+      <div class="grid-4">
         <div class="form-group"><label class="form-label">Option A</label><textarea name="option_a" class="form-control" rows="2"></textarea></div>
         <div class="form-group"><label class="form-label">Option B</label><textarea name="option_b" class="form-control" rows="2"></textarea></div>
         <div class="form-group"><label class="form-label">Option C</label><textarea name="option_c" class="form-control" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Option D</label><textarea name="option_d" class="form-control" rows="2"></textarea></div>
       </div>
       <div class="grid-3">
-        <div class="form-group"><label class="form-label">Correct Option</label><select name="correct_option" class="form-control"><option value="">Open-ended</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="form-group"><label class="form-label">Correct Option</label><select name="correct_option" class="form-control"><option value="">Open-ended</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
         <div class="form-group"><label class="form-label">Category</label><input name="category" class="form-control" value="general" placeholder="grammar, work, travel"></div>
         <div class="form-group"><label class="form-label">XP</label><input type="number" name="xp_reward" class="form-control" value="25" min="5" max="200"></div>
       </div>
+      <div class="form-group"><label class="form-label">Answer Key</label><textarea name="answer_key" class="form-control" rows="2" placeholder="For sentence rearrangement: correct sentence. For reading: numbered answers. For fill blank: correct word."></textarea></div>
       <div class="grid-3">
         <div class="form-group"><label class="form-label">Tags / Skills</label><input name="tags" class="form-control" placeholder="tenses, idioms, customer-service"></div>
         <div class="form-group"><label class="form-label">Audio URL</label><input name="audio_url" class="form-control" placeholder="optional pronunciation audio URL"></div>

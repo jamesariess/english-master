@@ -124,7 +124,9 @@ CREATE TABLE IF NOT EXISTS practice_items (
     option_a TEXT,
     option_b TEXT,
     option_c TEXT,
+    option_d TEXT,
     correct_option CHAR(1),
+    answer_key TEXT,
     explanation TEXT,
     difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
     category VARCHAR(80) DEFAULT 'general',
@@ -227,6 +229,15 @@ INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,correct
 ('vocabulary_quiz','Vocabulary in Context','Choose the best word: She gave a clear and ___ explanation.','confusing','concise','late','B','Concise means clear and expressed in few words.','intermediate','vocabulary',30),
 ('writing_prompt','Write a Strong Sentence','Write one professional sentence using the word "proactive".',NULL,NULL,NULL,NULL,'A strong answer uses proactive to mean taking action before problems happen.','intermediate','writing',35),
 ('speaking_prompt','Read Aloud: Clear Introduction','Read this aloud: Hello, my name is Anna. I am practicing English every day so I can speak more clearly at work.',NULL,NULL,NULL,NULL,'Focus on clear pacing and word endings.','beginner','speaking',25);
+
+INSERT INTO practice_items (type,title,prompt,option_a,answer_key,explanation,difficulty,category,tags,xp_reward) VALUES
+('sentence_rearrangement','Build a Simple Sentence','Drag the words into the correct order.','The bird can fly.','The bird can fly.','English sentences usually follow subject + helping verb + main verb.','beginner','grammar','word order, sentence structure',25);
+
+INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,option_d,correct_option,answer_key,explanation,difficulty,category,tags,xp_reward) VALUES
+('fill_blank','Choose the Right Preposition','She is interested ____ learning English.','on','in','at','for','B','in','Use \"interested in\" before a noun or gerund.','beginner','grammar','prepositions, gerunds',25);
+
+INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,answer_key,explanation,difficulty,category,tags,xp_reward) VALUES
+('reading_comprehension','Maria Practices Every Day','Maria wants to speak English more confidently at work. Every morning, she reads one short paragraph aloud before breakfast. At lunch, she writes five new words in her notebook and makes her own sentences. In the evening, she talks with an AI tutor for ten minutes. After one month, Maria notices that she can answer customers faster and explain ideas more clearly. She still makes mistakes, but she understands them and corrects them quickly.','Why does Maria practice English?','What does she do at lunch?','How does Maria improve after one month?','1. She wants to speak more confidently at work. 2. She writes five new words and makes sentences. 3. She answers customers faster and explains ideas more clearly.','Good answers should use details from the story.','beginner','reading','main idea, details',35);
 
 -- Sample achievements
 INSERT INTO achievements (name, description, icon, xp_reward, condition_type, condition_value) VALUES
