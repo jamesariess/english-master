@@ -302,59 +302,59 @@ window.addEventListener('load', function() {
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <a href="<?= APP_URL ?>/dashboard.php" class="nav-item <?= $currentPage==='dashboard'?'active':'' ?>">
-        <span class="nav-icon">DA</span><span class="nav-label">Dashboard</span>
+        <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
       </a>
       <a href="<?= APP_URL ?>/chat.php" class="nav-item <?= $currentPage==='chat'?'active':'' ?>">
-        <span class="nav-icon">AI</span><span class="nav-label">AI Chat</span>
+        <span class="nav-icon">💬</span><span class="nav-label">AI Chat</span>
       </a>
       <a href="<?= APP_URL ?>/grammar.php" class="nav-item <?= $currentPage==='grammar'?'active':'' ?>">
-        <span class="nav-icon">GR</span><span class="nav-label">Grammar Check</span>
+        <span class="nav-icon">✏️</span><span class="nav-label">Grammar Check</span>
       </a>
       <a href="<?= APP_URL ?>/vocabulary.php" class="nav-item <?= $currentPage==='vocabulary'?'active':'' ?>">
-        <span class="nav-icon">VO</span><span class="nav-label">Vocabulary</span>
+        <span class="nav-icon">📚</span><span class="nav-label">Vocabulary</span>
       </a>
       <a href="<?= APP_URL ?>/challenges.php" class="nav-item <?= $currentPage==='challenges'?'active':'' ?>">
-        <span class="nav-icon">CH</span><span class="nav-label">Daily Challenges</span>
+        <span class="nav-icon">🏆</span><span class="nav-label">Daily Challenges</span>
       </a>
       <a href="<?= APP_URL ?>/practice.php" class="nav-item <?= $currentPage==='practice'?'active':'' ?>">
-        <span class="nav-icon">PL</span><span class="nav-label">Practice Lab</span>
+        <span class="nav-icon">🧪</span><span class="nav-label">Practice Lab</span>
       </a>
       <a href="<?= APP_URL ?>/sentence_rearrangement.php" class="nav-item <?= $currentPage==='sentence_rearrangement'?'active':'' ?>">
-        <span class="nav-icon">SR</span><span class="nav-label">Rearrange Sentences</span>
+        <span class="nav-icon">🔀</span><span class="nav-label">Rearrange Sentences</span>
       </a>
       <a href="<?= APP_URL ?>/fill_blank.php" class="nav-item <?= $currentPage==='fill_blank'?'active':'' ?>">
-        <span class="nav-icon">FB</span><span class="nav-label">Fill the Blank</span>
+        <span class="nav-icon">🖊️</span><span class="nav-label">Fill the Blank</span>
       </a>
       <a href="<?= APP_URL ?>/reading_comprehension.php" class="nav-item <?= $currentPage==='reading_comprehension'?'active':'' ?>">
-        <span class="nav-icon">RC</span><span class="nav-label">Reading Practice</span>
+        <span class="nav-icon">📖</span><span class="nav-label">Reading Practice</span>
       </a>
       <a href="<?= APP_URL ?>/vocabulary_lesson.php" class="nav-item <?= $currentPage==='vocabulary_lesson'?'active':'' ?>">
-        <span class="nav-icon">VL</span><span class="nav-label">Vocabulary Lesson</span>
+        <span class="nav-icon">🎓</span><span class="nav-label">Vocabulary Lesson</span>
       </a>
       <a href="<?= APP_URL ?>/sentence_builder.php" class="nav-item <?= $currentPage==='sentence_builder'?'active':'' ?>">
-        <span class="nav-icon">SB</span><span class="nav-label">5 Sentence Builder</span>
+        <span class="nav-icon">🏗️</span><span class="nav-label">5 Sentence Builder</span>
       </a>
       <a href="<?= APP_URL ?>/daily_practice.php" class="nav-item <?= $currentPage==='daily_practice'?'active':'' ?>">
-        <span class="nav-icon">DP</span><span class="nav-label">Daily Practice Set</span>
+        <span class="nav-icon">📅</span><span class="nav-label">Daily Practice Set</span>
       </a>
       <a href="<?= APP_URL ?>/scenario_practice.php" class="nav-item <?= $currentPage==='scenario_practice'?'active':'' ?>">
-        <span class="nav-icon">SP</span><span class="nav-label">Scenario Practice</span>
+        <span class="nav-icon">🎭</span><span class="nav-label">Scenario Practice</span>
       </a>
       <a href="<?= APP_URL ?>/analytical_english.php" class="nav-item <?= $currentPage==='analytical_english'?'active':'' ?>">
-        <span class="nav-icon">AE</span><span class="nav-label">Analytical English</span>
+        <span class="nav-icon">🔍</span><span class="nav-label">Analytical English</span>
       </a>
       <a href="<?= APP_URL ?>/speaking.php" class="nav-item <?= $currentPage==='speaking'?'active':'' ?>">
-        <span class="nav-icon">SP</span><span class="nav-label">Speaking Practice</span>
+        <span class="nav-icon">🎤</span><span class="nav-label">Speaking Practice</span>
       </a>
       <a href="<?= APP_URL ?>/interview.php" class="nav-item <?= $currentPage==='interview'?'active':'' ?>">
-        <span class="nav-icon">IN</span><span class="nav-label">Interview Prep</span>
+        <span class="nav-icon">👔</span><span class="nav-label">Interview Prep</span>
       </a>
       <a href="<?= APP_URL ?>/progress.php" class="nav-item <?= $currentPage==='progress'?'active':'' ?>">
-        <span class="nav-icon">PR</span><span class="nav-label">My Progress</span>
+        <span class="nav-icon">📈</span><span class="nav-label">My Progress</span>
       </a>
       <?php if (isAdmin($user)): ?>
       <a href="<?= APP_URL ?>/admin.php" class="nav-item <?= $currentPage==='admin'?'active':'' ?>">
-        <span class="nav-icon">AD</span><span class="nav-label">Admin Panel</span>
+        <span class="nav-icon">⚙️</span><span class="nav-label">Admin Panel</span>
       </a>
       <?php endif; ?>
     </nav>

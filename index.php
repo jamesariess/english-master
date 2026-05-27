@@ -531,11 +531,7 @@ setTimeout(() => EMLoader.hide(), 8000);
       </p>
     </div>
 
-    <!-- AUTH BOX (shared HTML, used on both mobile & desktop via JS) -->
-    <div class="lp-auth-box" id="mobileAuthBox">
-      <?php include __DIR__ . '/includes/_auth_form.php'; ?>
-    </div>
-  </div>
+
 
   <!-- Mobile: feature tiles below form -->
   <div class="lp-mobile-hero">
