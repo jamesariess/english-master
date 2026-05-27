@@ -316,9 +316,7 @@ window.addEventListener('load', function() {
       <a href="<?= APP_URL ?>/challenges.php" class="nav-item <?= $currentPage==='challenges'?'active':'' ?>">
         <span class="nav-icon">🏆</span><span class="nav-label">Daily Challenges</span>
       </a>
-      <a href="<?= APP_URL ?>/practice.php" class="nav-item <?= $currentPage==='practice'?'active':'' ?>">
-        <span class="nav-icon">🧪</span><span class="nav-label">Practice Lab</span>
-      </a>
+ 
       <a href="<?= APP_URL ?>/sentence_rearrangement.php" class="nav-item <?= $currentPage==='sentence_rearrangement'?'active':'' ?>">
         <span class="nav-icon">🔀</span><span class="nav-label">Rearrange Sentences</span>
       </a>
