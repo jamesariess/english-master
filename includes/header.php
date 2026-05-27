@@ -9,6 +9,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%234f8ef7'/%3E%3Cstop offset='1' stop-color='%232dd4bf'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%23070b18'/%3E%3Crect x='10' y='10' width='44' height='44' rx='12' fill='url(%23g)'/%3E%3Cpath d='M24 20h18v6H31v5h10v6H31v7h12v6H24V20z' fill='white'/%3E%3C/svg%3E">
 <title><?= isset($pageTitle) ? clean($pageTitle) . ' — ' : '' ?><?= APP_NAME ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -177,6 +178,7 @@ window.emToast = function(msg, type = 'info', duration = 2800) {
   if (!container) return;
   const el = document.createElement('div');
   el.className = `em-toast-item ${type}`;
+};
 
 /* --- Toast Notification System --- */
 window.emToast = function(msg, type = 'info', duration = 2800) {
@@ -208,27 +210,93 @@ document.addEventListener('click', function(e) {
 
 /* --- Button loading state helper (updated) --- */
 window.btnLoading = function(btn, loading) {
-  if (!btn) return;
   if (loading) {
-    if (!btn.dataset.origText) btn.dataset.origText = btn.innerHTML;
-    btn.classList.add('loading', 'is-loading');
-    btn.disabled = true;
+    EMLoader.show('Loading...');
+    EmpBar.start();
   } else {
-    btn.classList.remove('loading', 'is-loading');
-    btn.disabled = false;
-    if (btn.dataset.origText) btn.innerHTML = btn.dataset.origText;
+    EMLoader.hide();
+    EmpBar.done();
   }
 };
 
+function emIsAjaxForm(form) {
+  return form?.dataset?.noloader || form?.dataset?.ajax;
+}
+
+document.addEventListener('submit', function(e) {
+  const form = e.target;
+  if (emIsAjaxForm(form)) return;
+  EMLoader.show('Saving...');
+  EmpBar.start();
+}, true);
+
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('button, .btn');
+  if (!btn || btn.matches('[data-noloader],[data-ajax]')) return;
+  if (btn.closest('form') || btn.tagName === 'A') return;
+  const important = btn.matches('[data-loader],[data-loading]') ||
+    /\b(generate|check|verify|submit|save|create|update|delete|start|send|practice|answer|complete)\b/i.test(btn.textContent || '');
+  if (!important) return;
+  EMLoader.show('Loading...');
+  EmpBar.start();
+  setTimeout(() => {
+    EMLoader.hide();
+    EmpBar.done();
+  }, 650);
+});
+
+if (window.fetch) {
+  const emNativeFetch = window.fetch.bind(window);
+  window.fetch = function(input, init = {}) {
+    const method = (init.method || (input && input.method) || 'GET').toUpperCase();
+    const shouldShow = method !== 'GET';
+    if (shouldShow) {
+      EMLoader.show('Saving...');
+      EmpBar.start();
+    }
+    return emNativeFetch(input, init).finally(() => {
+      if (shouldShow) {
+        EMLoader.hide();
+        EmpBar.done();
+      }
+    });
+  };
+}
+
+if (window.XMLHttpRequest) {
+  const emOpen = XMLHttpRequest.prototype.open;
+  const emSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.open = function(method) {
+    this._emShowLoader = String(method || 'GET').toUpperCase() !== 'GET';
+    return emOpen.apply(this, arguments);
+  };
+  XMLHttpRequest.prototype.send = function() {
+    if (this._emShowLoader) {
+      EMLoader.show('Saving...');
+      EmpBar.start();
+      this.addEventListener('loadend', () => {
+        EMLoader.hide();
+        EmpBar.done();
+      }, { once: true });
+    }
+    return emSend.apply(this, arguments);
+  };
+}
+
 /* --- Stat number count-up on page load --- */
 function countUp(el, target, duration = 1200) {
-  const start = 0;
-  const step = target / (duration / 16);
+  const start = parseInt((el.textContent || '0').replace(/,/g, ''), 10) || 0;
+  if (start === target) {
+    el.textContent = target.toLocaleString();
+    return;
+  }
+  const direction = target >= start ? 1 : -1;
+  const step = Math.max(1, Math.abs(target - start) / (duration / 16)) * direction;
   let current = start;
   const timer = setInterval(() => {
-    current = Math.min(current + step, target);
+    current = direction > 0 ? Math.min(current + step, target) : Math.max(current + step, target);
     el.textContent = Math.round(current).toLocaleString();
-    if (current >= target) clearInterval(timer);
+    if ((direction > 0 && current >= target) || (direction < 0 && current <= target)) clearInterval(timer);
   }, 16);
 }
 window.addEventListener('load', function() {
@@ -301,60 +369,96 @@ window.addEventListener('load', function() {
 
     <!-- Navigation -->
     <nav class="sidebar-nav">
-      <a href="<?= APP_URL ?>/dashboard.php" class="nav-item <?= $currentPage==='dashboard'?'active':'' ?>">
-        <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
-      </a>
-      <a href="<?= APP_URL ?>/chat.php" class="nav-item <?= $currentPage==='chat'?'active':'' ?>">
-        <span class="nav-icon">💬</span><span class="nav-label">AI Chat</span>
-      </a>
-      <a href="<?= APP_URL ?>/grammar.php" class="nav-item <?= $currentPage==='grammar'?'active':'' ?>">
-        <span class="nav-icon">✏️</span><span class="nav-label">Grammar Check</span>
-      </a>
-      <a href="<?= APP_URL ?>/vocabulary.php" class="nav-item <?= $currentPage==='vocabulary'?'active':'' ?>">
-        <span class="nav-icon">📚</span><span class="nav-label">Vocabulary</span>
-      </a>
-      <a href="<?= APP_URL ?>/challenges.php" class="nav-item <?= $currentPage==='challenges'?'active':'' ?>">
-        <span class="nav-icon">🏆</span><span class="nav-label">Daily Challenges</span>
-      </a>
- 
-      <a href="<?= APP_URL ?>/sentence_rearrangement.php" class="nav-item <?= $currentPage==='sentence_rearrangement'?'active':'' ?>">
-        <span class="nav-icon">🔀</span><span class="nav-label">Rearrange Sentences</span>
-      </a>
-      <a href="<?= APP_URL ?>/fill_blank.php" class="nav-item <?= $currentPage==='fill_blank'?'active':'' ?>">
-        <span class="nav-icon">🖊️</span><span class="nav-label">Fill the Blank</span>
-      </a>
-      <a href="<?= APP_URL ?>/reading_comprehension.php" class="nav-item <?= $currentPage==='reading_comprehension'?'active':'' ?>">
-        <span class="nav-icon">📖</span><span class="nav-label">Reading Practice</span>
-      </a>
-      <a href="<?= APP_URL ?>/vocabulary_lesson.php" class="nav-item <?= $currentPage==='vocabulary_lesson'?'active':'' ?>">
-        <span class="nav-icon">🎓</span><span class="nav-label">Vocabulary Lesson</span>
-      </a>
-      <a href="<?= APP_URL ?>/sentence_builder.php" class="nav-item <?= $currentPage==='sentence_builder'?'active':'' ?>">
-        <span class="nav-icon">🏗️</span><span class="nav-label">5 Sentence Builder</span>
-      </a>
-      <a href="<?= APP_URL ?>/daily_practice.php" class="nav-item <?= $currentPage==='daily_practice'?'active':'' ?>">
-        <span class="nav-icon">📅</span><span class="nav-label">Daily Practice Set</span>
-      </a>
-      <a href="<?= APP_URL ?>/scenario_practice.php" class="nav-item <?= $currentPage==='scenario_practice'?'active':'' ?>">
-        <span class="nav-icon">🎭</span><span class="nav-label">Scenario Practice</span>
-      </a>
-      <a href="<?= APP_URL ?>/analytical_english.php" class="nav-item <?= $currentPage==='analytical_english'?'active':'' ?>">
-        <span class="nav-icon">🔍</span><span class="nav-label">Analytical English</span>
-      </a>
-      <a href="<?= APP_URL ?>/speaking.php" class="nav-item <?= $currentPage==='speaking'?'active':'' ?>">
-        <span class="nav-icon">🎤</span><span class="nav-label">Speaking Practice</span>
-      </a>
-      <a href="<?= APP_URL ?>/interview.php" class="nav-item <?= $currentPage==='interview'?'active':'' ?>">
-        <span class="nav-icon">👔</span><span class="nav-label">Interview Prep</span>
-      </a>
-      <a href="<?= APP_URL ?>/progress.php" class="nav-item <?= $currentPage==='progress'?'active':'' ?>">
-        <span class="nav-icon">📈</span><span class="nav-label">My Progress</span>
-      </a>
+      <?php
+        $practicePages = ['practice','grammar','vocabulary','challenges','quizzes'];
+        $exercisePages = ['sentence_rearrangement','fill_blank','reading_comprehension','vocabulary_lesson','sentence_builder','daily_practice','scenario_practice','analytical_english'];
+        $speakingPages = ['chat','speaking','interview'];
+      ?>
+
+      <!-- Main -->
+      <div class="nav-group">
+        <div class="nav-group-title">Main</div>
+        <a href="<?= APP_URL ?>/dashboard.php" class="nav-item <?= $currentPage==='dashboard'?'active':'' ?>">
+          <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
+        </a>
+        <a href="<?= APP_URL ?>/progress.php" class="nav-item <?= $currentPage==='progress'?'active':'' ?>">
+          <span class="nav-icon">📈</span><span class="nav-label">My Progress</span>
+        </a>
+      </div>
+
+      <!-- Practice -->
+      <details class="nav-group" <?= in_array($currentPage, $practicePages, true) ? 'open' : '' ?>>
+        <summary class="nav-group-title">Practice</summary>
+        <a href="<?= APP_URL ?>/practice.php" class="nav-item <?= $currentPage==='practice'?'active':'' ?>">
+          <span class="nav-icon">🧪</span><span class="nav-label">Practice Lab</span>
+        </a>
+        <a href="<?= APP_URL ?>/quizzes.php" class="nav-item <?= $currentPage==='quizzes'?'active':'' ?>">
+          <span class="nav-icon">❓</span><span class="nav-label">Tense & Meaning Quizzes</span>
+        </a>
+        <a href="<?= APP_URL ?>/grammar.php" class="nav-item <?= $currentPage==='grammar'?'active':'' ?>">
+          <span class="nav-icon">✏️</span><span class="nav-label">Grammar Check</span>
+        </a>
+        <a href="<?= APP_URL ?>/vocabulary.php" class="nav-item <?= $currentPage==='vocabulary'?'active':'' ?>">
+          <span class="nav-icon">📚</span><span class="nav-label">Vocabulary</span>
+        </a>
+        <a href="<?= APP_URL ?>/challenges.php" class="nav-item <?= $currentPage==='challenges'?'active':'' ?>">
+          <span class="nav-icon">🏆</span><span class="nav-label">Daily Challenges</span>
+        </a>
+      </details>
+
+      <!-- AI Exercises -->
+      <details class="nav-group" <?= in_array($currentPage, $exercisePages, true) ? 'open' : '' ?>>
+        <summary class="nav-group-title">AI Exercises</summary>
+        <a href="<?= APP_URL ?>/sentence_rearrangement.php" class="nav-item <?= $currentPage==='sentence_rearrangement'?'active':'' ?>">
+          <span class="nav-icon">🔀</span><span class="nav-label">Rearrange Sentences</span>
+        </a>
+        <a href="<?= APP_URL ?>/fill_blank.php" class="nav-item <?= $currentPage==='fill_blank'?'active':'' ?>">
+          <span class="nav-icon">🖊️</span><span class="nav-label">Fill the Blank</span>
+        </a>
+        <a href="<?= APP_URL ?>/reading_comprehension.php" class="nav-item <?= $currentPage==='reading_comprehension'?'active':'' ?>">
+          <span class="nav-icon">📖</span><span class="nav-label">Reading Practice</span>
+        </a>
+        <a href="<?= APP_URL ?>/vocabulary_lesson.php" class="nav-item <?= $currentPage==='vocabulary_lesson'?'active':'' ?>">
+          <span class="nav-icon">🎓</span><span class="nav-label">Vocabulary Lesson</span>
+        </a>
+        <a href="<?= APP_URL ?>/sentence_builder.php" class="nav-item <?= $currentPage==='sentence_builder'?'active':'' ?>">
+          <span class="nav-icon">🏗️</span><span class="nav-label">5 Sentence Builder</span>
+        </a>
+        <a href="<?= APP_URL ?>/daily_practice.php" class="nav-item <?= $currentPage==='daily_practice'?'active':'' ?>">
+          <span class="nav-icon">📅</span><span class="nav-label">Daily Practice Set</span>
+        </a>
+        <a href="<?= APP_URL ?>/scenario_practice.php" class="nav-item <?= $currentPage==='scenario_practice'?'active':'' ?>">
+          <span class="nav-icon">🎭</span><span class="nav-label">Scenario Practice</span>
+        </a>
+        <a href="<?= APP_URL ?>/analytical_english.php" class="nav-item <?= $currentPage==='analytical_english'?'active':'' ?>">
+          <span class="nav-icon">🔍</span><span class="nav-label">Analytical English</span>
+        </a>
+      </details>
+
+      <!-- Speaking -->
+      <details class="nav-group" <?= in_array($currentPage, $speakingPages, true) ? 'open' : '' ?>>
+        <summary class="nav-group-title">Speaking</summary>
+        <a href="<?= APP_URL ?>/chat.php" class="nav-item <?= $currentPage==='chat'?'active':'' ?>">
+          <span class="nav-icon">💬</span><span class="nav-label">AI Chat</span>
+        </a>
+        <a href="<?= APP_URL ?>/speaking.php" class="nav-item <?= $currentPage==='speaking'?'active':'' ?>">
+          <span class="nav-icon">🎤</span><span class="nav-label">Speaking Practice</span>
+        </a>
+        <a href="<?= APP_URL ?>/interview.php" class="nav-item <?= $currentPage==='interview'?'active':'' ?>">
+          <span class="nav-icon">👔</span><span class="nav-label">Interview Prep</span>
+        </a>
+      </details>
+
+      <!-- Admin (conditional) -->
       <?php if (isAdmin($user)): ?>
-      <a href="<?= APP_URL ?>/admin.php" class="nav-item <?= $currentPage==='admin'?'active':'' ?>">
-        <span class="nav-icon">⚙️</span><span class="nav-label">Admin Panel</span>
-      </a>
+      <div class="nav-group">
+        <div class="nav-group-title">Admin</div>
+        <a href="<?= APP_URL ?>/admin.php" class="nav-item <?= $currentPage==='admin'?'active':'' ?>">
+          <span class="nav-icon">⚙️</span><span class="nav-label">Admin Panel</span>
+        </a>
+      </div>
       <?php endif; ?>
+
     </nav>
     <?php endif; ?>
 

@@ -129,12 +129,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prompt .= " JSON format: {\"items\":[{\"type\":\"grammar|vocabulary|writing|speaking|listening\",\"title\":\"\",\"description\":\"\",\"content\":\"\",\"xp_reward\":50}]}";
         } elseif ($target === 'speaking') {
             $prompt .= " JSON format: {\"items\":[{\"text\":\"read aloud text\",\"topic\":\"\",\"category\":\"\"}]}";
+        } elseif ($target === 'quiz') {
+            $prompt .= " JSON format: {\"items\":[{\"type\":\"tense_quiz|synonyms_antonyms_quiz|sentence_meaning_quiz\",\"title\":\"\",\"prompt\":\"question text\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"option_d\":\"\",\"correct_option\":\"A|B|C|D\",\"answer_key\":\"correct answer text\",\"explanation\":\"short learner-friendly explanation\",\"category\":\"grammar or vocabulary\",\"tags\":\"tenses, synonyms, antonyms, idioms\",\"xp_reward\":25}]}";
+            $prompt .= " Rules: tense_quiz must test past, present, or future tense. synonyms_antonyms_quiz must ask for a synonym or antonym like Synonym of happy. sentence_meaning_quiz must test meaning or idiom comprehension like \"He is on cloud nine\" means...";
         } elseif ($target === 'strict_module') {
             $module = $_POST['module'] ?? 'vocabulary_lesson';
             $prompt = learningModulePrompt($module, ucfirst($difficulty), $topic);
             $prompt .= "\n\nReturn this as one saved item in JSON too: {\"items\":[{\"type\":\"" . esc(validPracticeType($module === 'vocabulary_lesson' ? 'word_sentence_builder' : $module)) . "\",\"title\":\"\",\"prompt\":\"full formatted exercise text\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"correct_option\":\"\",\"explanation\":\"teaching notes\",\"category\":\"$topic\",\"tags\":\"$topic\",\"xp_reward\":25}]}";
         } else {
-            $prompt .= " JSON format: {\"items\":[{\"type\":\"better_english|grammar_choice|vocabulary_quiz|writing_prompt|speaking_prompt|sentence_rearrangement|fill_blank|reading_comprehension|daily_challenge_set|scenario_roleplay|analytical_english|word_sentence_builder\",\"title\":\"\",\"prompt\":\"\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"option_d\":\"\",\"correct_option\":\"A|B|C|D or empty\",\"answer_key\":\"correct sentence, word, or reading answer key\",\"explanation\":\"why the answer is correct\",\"category\":\"\",\"tags\":\"comma skill tags\",\"xp_reward\":25}]}";
+            $prompt .= " JSON format: {\"items\":[{\"type\":\"better_english|grammar_choice|vocabulary_quiz|writing_prompt|speaking_prompt|sentence_rearrangement|fill_blank|reading_comprehension|daily_challenge_set|scenario_roleplay|analytical_english|word_sentence_builder|tense_quiz|synonyms_antonyms_quiz|sentence_meaning_quiz\",\"title\":\"\",\"prompt\":\"\",\"option_a\":\"\",\"option_b\":\"\",\"option_c\":\"\",\"option_d\":\"\",\"correct_option\":\"A|B|C|D or empty\",\"answer_key\":\"correct sentence, word, or reading answer key\",\"explanation\":\"why the answer is correct\",\"category\":\"\",\"tags\":\"comma skill tags\",\"xp_reward\":25}]}";
             $prompt .= " Rules: for sentence_rearrangement, prompt is the student instruction and option_a plus answer_key must be the correct sentence. For fill_blank, prompt must contain ____ and options A-D must be possible words. For reading_comprehension, prompt must be a 100-200 word story, option_a/option_b/option_c must be questions, and answer_key must contain numbered answers with explanations.";
         }
 
@@ -163,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cat = esc($item['category'] ?? 'speaking'); $diff = esc($difficulty);
                 $db->query("INSERT INTO speaking_prompts (text,topic,difficulty,category) VALUES ('$text','$topicEsc','$diff','$cat')");
                 $created++;
-            } elseif (($target === 'practice' || $target === 'strict_module') && !empty($item['title']) && !empty($item['prompt'])) {
+            } elseif (($target === 'practice' || $target === 'strict_module' || $target === 'quiz') && !empty($item['title']) && !empty($item['prompt'])) {
                 $type = esc(validPracticeType($item['type'] ?? 'better_english'));
                 $title = esc($item['title']); $promptEsc = esc($item['prompt']);
                 $a = esc($item['option_a'] ?? ''); $b = esc($item['option_b'] ?? ''); $c = esc($item['option_c'] ?? ''); $d = esc($item['option_d'] ?? '');
@@ -232,6 +235,7 @@ include 'includes/header.php';
         <option value="strict_module">Strict format module</option>
         <option value="vocabulary">Vocabulary words</option>
         <option value="challenge">Daily challenges</option>
+        <option value="quiz">Tense / Vocabulary / Meaning quizzes</option>
         <option value="speaking">Read-aloud prompts</option>
       </select>
     </div>
@@ -290,7 +294,7 @@ include 'includes/header.php';
     <form method="POST">
       <input type="hidden" name="action" value="add_practice">
       <div class="grid-2">
-        <div class="form-group"><label class="form-label">Type</label><select name="type" class="form-control"><option value="better_english">Choose Better English</option><option value="grammar_choice">Grammar Choice</option><option value="vocabulary_quiz">Vocabulary Quiz</option><option value="writing_prompt">Writing Prompt</option><option value="speaking_prompt">Read Aloud</option><option value="sentence_rearrangement">Sentence Rearrangement</option><option value="fill_blank">Fill in the Blank</option><option value="reading_comprehension">Reading Comprehension</option><option value="daily_challenge_set">Daily Challenge Set</option><option value="scenario_roleplay">Real-Life Scenario</option><option value="analytical_english">Analytical English</option><option value="word_sentence_builder">Word to 5 Sentences</option></select></div>
+        <div class="form-group"><label class="form-label">Type</label><select name="type" class="form-control"><option value="better_english">Choose Better English</option><option value="grammar_choice">Grammar Choice</option><option value="vocabulary_quiz">Vocabulary Quiz</option><option value="tense_quiz">Past / Present / Future Tense Quiz</option><option value="synonyms_antonyms_quiz">Synonyms & Antonyms Quiz</option><option value="sentence_meaning_quiz">Sentence Meaning Quiz</option><option value="writing_prompt">Writing Prompt</option><option value="speaking_prompt">Read Aloud</option><option value="sentence_rearrangement">Sentence Rearrangement</option><option value="fill_blank">Fill in the Blank</option><option value="reading_comprehension">Reading Comprehension</option><option value="daily_challenge_set">Daily Challenge Set</option><option value="scenario_roleplay">Real-Life Scenario</option><option value="analytical_english">Analytical English</option><option value="word_sentence_builder">Word to 5 Sentences</option></select></div>
         <div class="form-group"><label class="form-label">Level</label><select name="difficulty" class="form-control"><option>beginner</option><option>intermediate</option><option>advanced</option></select></div>
       </div>
       <div class="form-group"><label class="form-label">Title</label><input name="title" class="form-control" placeholder="e.g., Choose the correct sentence structure" required></div>

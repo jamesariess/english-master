@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_practice'])) {
     }
 
     if ($item) {
-        $isChoice = in_array($item['type'], ['better_english', 'grammar_choice', 'vocabulary_quiz', 'fill_blank', 'scenario_roleplay'], true);
+        $isChoice = in_array($item['type'], ['better_english', 'grammar_choice', 'vocabulary_quiz', 'fill_blank', 'scenario_roleplay', 'tense_quiz', 'synonyms_antonyms_quiz', 'sentence_meaning_quiz'], true);
         $isCorrect = 0;
         $feedback = '';
 
@@ -139,6 +139,7 @@ include 'includes/header.php';
     <a class="btn btn-outline btn-sm" href="sentence_rearrangement.php">Rearrangement</a>
     <a class="btn btn-outline btn-sm" href="fill_blank.php">Fill Blank</a>
     <a class="btn btn-outline btn-sm" href="reading_comprehension.php">Reading</a>
+    <a class="btn btn-outline btn-sm" href="quizzes.php">Quizzes</a>
     <a class="btn btn-outline btn-sm" href="daily_practice.php">Daily Set</a>
     <a class="btn btn-outline btn-sm" href="scenario_practice.php">Scenarios</a>
     <a class="btn btn-outline btn-sm" href="analytical_english.php">Analytical English</a>
@@ -152,6 +153,9 @@ include 'includes/header.php';
       <option value="better_english" <?= $type==='better_english'?'selected':'' ?>>Choose Better English</option>
       <option value="grammar_choice" <?= $type==='grammar_choice'?'selected':'' ?>>Grammar Choice</option>
       <option value="vocabulary_quiz" <?= $type==='vocabulary_quiz'?'selected':'' ?>>Vocabulary Quiz</option>
+      <option value="tense_quiz" <?= $type==='tense_quiz'?'selected':'' ?>>Tense Quiz</option>
+      <option value="synonyms_antonyms_quiz" <?= $type==='synonyms_antonyms_quiz'?'selected':'' ?>>Synonyms & Antonyms</option>
+      <option value="sentence_meaning_quiz" <?= $type==='sentence_meaning_quiz'?'selected':'' ?>>Sentence Meaning</option>
       <option value="writing_prompt" <?= $type==='writing_prompt'?'selected':'' ?>>Writing Prompt</option>
       <option value="speaking_prompt" <?= $type==='speaking_prompt'?'selected':'' ?>>Read Aloud</option>
       <option value="sentence_rearrangement" <?= $type==='sentence_rearrangement'?'selected':'' ?>>Sentence Rearrangement</option>
@@ -175,7 +179,7 @@ include 'includes/header.php';
 <?php if ($items && $items->num_rows > 0): ?>
 <div class="grid-2" style="gap:16px;align-items:start;">
   <?php while ($item = $items->fetch_assoc()):
-    $isChoice = in_array($item['type'], ['better_english', 'grammar_choice', 'vocabulary_quiz', 'fill_blank', 'scenario_roleplay'], true);
+    $isChoice = in_array($item['type'], ['better_english', 'grammar_choice', 'vocabulary_quiz', 'fill_blank', 'scenario_roleplay', 'tense_quiz', 'synonyms_antonyms_quiz', 'sentence_meaning_quiz'], true);
     $typeLabel = ucwords(str_replace('_', ' ', $item['type']));
   ?>
   <div class="challenge-card <?= (int)$item['mastered'] ? 'completed' : 'active' ?>">

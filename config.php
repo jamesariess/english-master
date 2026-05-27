@@ -113,7 +113,10 @@ function practiceTypes() {
         'daily_challenge_set',
         'scenario_roleplay',
         'analytical_english',
-        'word_sentence_builder'
+        'word_sentence_builder',
+        'tense_quiz',
+        'synonyms_antonyms_quiz',
+        'sentence_meaning_quiz'
     ];
 }
 
@@ -231,7 +234,7 @@ function callAI($messages, $system = '', $maxTokens = 1500) {
 // --- Auto-migrate: create new tables if they don't exist ---
 // This runs once per session so old installs get upgraded automatically
 function ensureNewTables() {
-    $schemaVersion = '2026-05-27-interactive-tasks';
+    $schemaVersion = '2026-05-27-quiz-types';
     if (($_SESSION['tables_checked'] ?? '') === $schemaVersion) return;
     $db = db();
     $col = $db->query("SHOW COLUMNS FROM users LIKE 'role'");
@@ -254,7 +257,7 @@ function ensureNewTables() {
     if ($col && $col->num_rows === 0) {
         $db->query("ALTER TABLE challenges ADD active TINYINT(1) DEFAULT 1 AFTER tags");
     }
-    $db->query("ALTER TABLE practice_items MODIFY type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt','sentence_rearrangement','fill_blank','reading_comprehension','daily_challenge_set','scenario_roleplay','analytical_english','word_sentence_builder') NOT NULL DEFAULT 'better_english'");
+    $db->query("ALTER TABLE practice_items MODIFY type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt','sentence_rearrangement','fill_blank','reading_comprehension','daily_challenge_set','scenario_roleplay','analytical_english','word_sentence_builder','tense_quiz','synonyms_antonyms_quiz','sentence_meaning_quiz') NOT NULL DEFAULT 'better_english'");
     $col = $db->query("SHOW COLUMNS FROM practice_items LIKE 'tags'");
     if ($col && $col->num_rows === 0) {
         $db->query("ALTER TABLE practice_items ADD tags VARCHAR(255) DEFAULT '' AFTER category");
@@ -299,7 +302,7 @@ function ensureNewTables() {
     )");
     $db->query("CREATE TABLE IF NOT EXISTS practice_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt','sentence_rearrangement','fill_blank','reading_comprehension','daily_challenge_set','scenario_roleplay','analytical_english','word_sentence_builder') NOT NULL DEFAULT 'better_english',
+        type ENUM('better_english','grammar_choice','vocabulary_quiz','writing_prompt','speaking_prompt','sentence_rearrangement','fill_blank','reading_comprehension','daily_challenge_set','scenario_roleplay','analytical_english','word_sentence_builder','tense_quiz','synonyms_antonyms_quiz','sentence_meaning_quiz') NOT NULL DEFAULT 'better_english',
         title VARCHAR(200) NOT NULL,
         prompt TEXT NOT NULL,
         option_a TEXT,
@@ -371,6 +374,14 @@ function ensureNewTables() {
     if ($r && (int)$r->fetch_assoc()['c'] === 0) {
         $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,answer_key,explanation,difficulty,category,tags,xp_reward) VALUES
             ('reading_comprehension','Maria Practices Every Day','Maria wants to speak English more confidently at work. Every morning, she reads one short paragraph aloud before breakfast. At lunch, she writes five new words in her notebook and makes her own sentences. In the evening, she talks with an AI tutor for ten minutes. After one month, Maria notices that she can answer customers faster and explain ideas more clearly. She still makes mistakes, but she understands them and corrects them quickly.','Why does Maria practice English?','What does she do at lunch?','How does Maria improve after one month?','1. She wants to speak more confidently at work. 2. She writes five new words and makes sentences. 3. She answers customers faster and explains ideas more clearly.','Good answers should use details from the story. The key idea is that small daily habits help Maria improve her workplace English.','beginner','reading','main idea, details',35)
+        ");
+    }
+    $r = $db->query("SELECT COUNT(*) AS c FROM practice_items WHERE type IN ('tense_quiz','synonyms_antonyms_quiz','sentence_meaning_quiz')");
+    if ($r && (int)$r->fetch_assoc()['c'] === 0) {
+        $db->query("INSERT INTO practice_items (type,title,prompt,option_a,option_b,option_c,option_d,correct_option,answer_key,explanation,difficulty,category,tags,xp_reward) VALUES
+            ('tense_quiz','Choose the Correct Tense','Tomorrow, she ____ her English lesson.','attended','attends','will attend','is attended','C','will attend','Use future tense with tomorrow: she will attend her English lesson.','beginner','grammar','future tense, verb tense',25),
+            ('synonyms_antonyms_quiz','Synonym of Happy','Choose the synonym of happy.','Sad','Joyful','Angry','Tired','B','Joyful','A synonym has a similar meaning. Joyful means very happy.','beginner','vocabulary','synonyms, emotions',25),
+            ('sentence_meaning_quiz','Meaning of an Idiom','\"He is on cloud nine\" means:','He is sad','He is very happy','He is tired','He is sick','B','He is very happy','On cloud nine is an idiom that means extremely happy.','beginner','comprehension','idioms, sentence meaning',25)
         ");
     }
     $r = $db->query("SELECT COUNT(*) AS c FROM practice_items");

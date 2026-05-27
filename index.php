@@ -79,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#070b18">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%234f8ef7'/%3E%3Cstop offset='1' stop-color='%232dd4bf'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%23070b18'/%3E%3Crect x='10' y='10' width='44' height='44' rx='12' fill='url(%23g)'/%3E%3Cpath d='M24 20h18v6H31v5h10v6H31v7h12v6H24V20z' fill='white'/%3E%3C/svg%3E">
 <title>EnglishMaster AI — Speak Confidently</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -304,6 +305,7 @@ select.lp-input {
 .lp-switch a { color: var(--blue); font-weight: 600; }
 
 /* ── MOBILE layout: form on top, hero below ── */
+.lp-mobile-wrap { display: none; }   /* mobile-only auth/features flow */
 .lp-mobile-top  { display: none; }   /* mobile-only top header */
 .lp-mobile-hero { display: none; }   /* mini hero below form on mobile */
 
@@ -329,6 +331,7 @@ select.lp-input {
 
   /* Show mobile layout */
   .lp-mobile-top  { display: block; }
+  .lp-mobile-wrap { display: flex; }
   .lp-mobile-hero { display: block; }
 
   /* Mobile page wrapper */
@@ -498,7 +501,40 @@ const EmpBar = (() => {
 })();
 
 /* Show on form submit */
-document.addEventListener('submit', () => { EMLoader.show(); EmpBar.start(); });
+document.addEventListener('submit', (e) => {
+  const form = e.target;
+  if (form.dataset.emSubmitting === '1') return;
+  e.preventDefault();
+  form.dataset.emSubmitting = '1';
+  const btn = form.querySelector('button[type="submit"], button:not([type])');
+  if (btn) btn.disabled = true;
+  window.EMLoader?.show('Signing in...');
+  window.EmpBar?.start?.();
+  requestAnimationFrame(() => window.EMLoader?.show('Signing in...'));
+  setTimeout(() => HTMLFormElement.prototype.submit.call(form), 120);
+});
+/* Show on local page links */
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href]');
+  if (!a) return;
+  const href = a.getAttribute('href') || '';
+  if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('http') || a.target === '_blank') return;
+  EMLoader.show();
+  EmpBar.start();
+});
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn || btn.closest('form')) return;
+  const important = btn.matches('[data-loader],[data-loading]') ||
+    /\b(generate|check|verify|submit|save|create|update|delete|start|send|practice|answer|complete)\b/i.test(btn.textContent || '');
+  if (!important) return;
+  EMLoader.show('Loading...');
+  EmpBar.start();
+  setTimeout(() => {
+    EMLoader.hide();
+    EmpBar.done();
+  }, 650);
+});
 /* Hide on load */
 window.addEventListener('load', () => { EMLoader.hide(); EmpBar.done(); });
 setTimeout(() => EMLoader.hide(), 8000);
@@ -532,6 +568,11 @@ setTimeout(() => EMLoader.hide(), 8000);
     </div>
 
 
+
+    <div class="lp-auth-box" id="mobileAuthBox">
+      <?php include __DIR__ . '/includes/_auth_form.php'; ?>
+    </div>
+  </div>
 
   <!-- Mobile: feature tiles below form -->
   <div class="lp-mobile-hero">
@@ -631,14 +672,6 @@ function switchTab(tab) {
     f.classList.toggle('active', f.id === 'form-' + tab);
   });
 }
-
-/* Button loading state */
-document.querySelectorAll('.lp-btn').forEach(btn => {
-  btn.closest('form')?.addEventListener('submit', () => {
-    btn.classList.add('loading');
-    btn.disabled = true;
-  });
-});
 
 <?php if ($activeTab === 'register'): ?>
 switchTab('register');

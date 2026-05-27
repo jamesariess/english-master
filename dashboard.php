@@ -1,9 +1,10 @@
 <?php
 require_once 'config.php';
 auth();
-$user = currentUser();
 $db = db();
 $uid = (int)$_SESSION['uid'];
+updateStreak($uid);
+$user = currentUser();
 $xpInfo = xpToNextLevel($user['xp']);
 $pageTitle = 'Dashboard';
 
@@ -22,7 +23,6 @@ $recentActivity = $db->query("SELECT * FROM xp_log WHERE user_id=$uid ORDER BY c
 // Recent grammar sessions
 $recentGrammar = $db->query("SELECT * FROM grammar_sessions WHERE user_id=$uid ORDER BY created_at DESC LIMIT 3");
 
-updateStreak($uid);
 include 'includes/header.php';
 ?>
 
@@ -36,28 +36,28 @@ include 'includes/header.php';
   <div class="stat-card">
     <div class="stat-icon">⚡</div>
     <div>
-      <div class="stat-val grad-text" data-count="<?= $user['xp'] ?>">0</div>
+      <div class="stat-val grad-text" data-count="<?= (int)$user['xp'] ?>"><?= number_format((int)$user['xp']) ?></div>
       <div class="stat-label">Total XP Earned</div>
     </div>
   </div>
   <div class="stat-card">
     <div class="stat-icon">🔥</div>
     <div>
-      <div class="stat-val" style="color:var(--yellow)" data-count="<?= $user['streak'] ?>">0</div>
+      <div class="stat-val" style="color:var(--yellow)" data-count="<?= (int)$user['streak'] ?>"><?= number_format((int)$user['streak']) ?></div>
       <div class="stat-label">Day Streak</div>
     </div>
   </div>
   <div class="stat-card">
     <div class="stat-icon">📚</div>
     <div>
-      <div class="stat-val" style="color:var(--green)" data-count="<?= $wordsLearned ?>">0</div>
+      <div class="stat-val" style="color:var(--green)" data-count="<?= (int)$wordsLearned ?>"><?= number_format((int)$wordsLearned) ?></div>
       <div class="stat-label">Words Mastered</div>
     </div>
   </div>
   <div class="stat-card">
     <div class="stat-icon">⭐</div>
     <div>
-      <div class="stat-val" style="color:var(--purple)" data-count="<?= $challengesDone ?>">0</div>
+      <div class="stat-val" style="color:var(--purple)" data-count="<?= (int)$challengesDone ?>"><?= number_format((int)$challengesDone) ?></div>
       <div class="stat-label">Challenges Done</div>
     </div>
   </div>
